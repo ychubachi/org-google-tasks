@@ -4,7 +4,7 @@
 
 (require 'ht)
 
-;; tasklists are treated as level 1 headlines.
+;;; Read tasklists json file
 (defun my/tasklists (file)
   (let ((json-object-type 'hash-table)
  	(json-array-type 'list)
@@ -17,48 +17,112 @@
   (let ((tasklists (my/tasklists "./test/sample-tasklists.json")))
     (should (equal (hash-table-p tasklists) t))))
 
-;; Insert a headline from gtask/gtasklist item.
-;; It will be used to pull the item from Google Tasks.
+;; (defun my/gtasks-id-alist ()
+;;   (org-map-entries
+;;    (lambda ()
+;;      (let ((gtasks-id (org-entry-get nil "GTASKS-ID")))
+;;        (cons gtasks-id (point))))
+;;    "+TODO=\"TODO\""
+;;    ;;"+TODO"
+;;    ;; "+GTASKS-ID=\"cF9ORW8yYWgyNTVES1dIbg\""
+;;    ))
+
+;; (ert-deftest my/gtasks-id-alist-test ()
+;;   (let (result)
+;;     (let* ((file "./test/sample-tasks.org"))
+;;       (with-current-buffer (find-file-noselect file)
+;; 	;; target
+;; 	(setq result (my/gtasks-id-alist))
+;; 	;; test
+;; 	(set-buffer-modified-p nil)
+;; 	(kill-buffer (current-buffer))))
+;;     (should (equal (length result) 8))))
+
+;;; Find Org headline
+;; - Generate a GTasks id alist from Org headlines
+;; - Returns a position of the headline.
+;; "+TODO=\"TODO\"" to filter TODO only
+(defun my/find (gtasks-id)
+  (let ((gtasks-id-alist
+	 (org-map-entries
+	  (lambda ()
+	    (let ((gtasks-id (org-entry-get nil "GTASKS-ID")))
+	      (cons gtasks-id (point)))))))
+    (cdr (assoc gtasks-id gtasks-id-alist)))) ; returns the position.
+
+(ert-deftest my/find_tasks_test ()
+  (let (result)
+    (let* ((file "./test/sample-tasks.org")
+	   (gtasks-id "Y1hxLXB0ZHJZb0x0Z3I0Mw"))
+      (with-current-buffer (find-file-noselect file)
+	;; target
+	(setq result (my/find gtasks-id))
+	;; test
+	(set-buffer-modified-p nil)
+	(kill-buffer (current-buffer))))
+    (should (eq result 589))))
+
+(ert-deftest my/find_tasklists_test ()
+  (let (result)
+    (let* ((file "./test/sample-tasklists.org")
+	   (gtasks-id "MDc1MzA1NTQ1OTYxODU5MTEwMTg6MDow"))
+      (with-current-buffer (find-file file)
+	;; target
+	(setq result (my/find gtasks-id))
+	;; test
+	(set-buffer-modified-p nil)
+	(kill-buffer (current-buffer))))
+    (should (eq result 1))))
+
+;;; Insert a headline from gtask/gtasklist item.
+;; It is to pull the item from Google Tasks.
 (defun my/update-or-create-headline (gtasks-item)
   (let* ((title (ht-get gtasks-item 'title))
 	 (kind (ht-get gtasks-item 'kind))
-	 (id (ht-get gtasks-item 'id))
+	 (gtasks-id (ht-get gtasks-item 'id))
 	 (etag (ht-get gtasks-item 'etag))
 	 (updated (ht-get gtasks-item 'updated)))
-    ;; (self-link (ht-get gtasks-item 'selfLink))
-
     ;; already exists?
     ;; find the headline if exists.
-    ;; (unless (my-goto-headline (gtasks-id))
-    ;;   (insert ..))
-    ;; - create new headline
-    (insert (format "* %s\n" title))
-    ;; - update a headline
-    ;; Update properties.
-    ;; if TODO, kind=tasks#task
-    (if (equal kind "tasks#task")
-	(org-todo 'todo))
-    (org-id-get-create) ; file-visiting buffer only
+    (let ((pos (my/find gtasks-id)))
+      (cond
+       (pos
+	;; Go to an existing headline
+	(goto-char pos))
+       (t
+	;; TODO: search parent by gtasks-id, levels
+	(goto-char (point-max))
+	;; Create a new headline
+	(insert (format "* %s\n" title))
+	(org-id-get-create) ; file-visiting buffer only
+	))
+      )
+    ;; compare etag
+    (let ((current-etag (org-entry-get nil "GTASKS-ETAG")))
+      (if (not (equal etag current-etag))
+	  ;; We need to update
+	  (progn
+	    (org-edit-headline title)
+	    (if (equal kind "tasks#task")
+		(org-todo 'todo))
+	    (org-entry-put nil "GTASKS-ID" gtasks-id)
+	    (org-entry-put nil "GTASKS-ETAG" etag)
+	    (org-entry-put nil "GTASKS-UPDATED" updated))
+	))))
 
-    (org-entry-put nil "GTASKS-ID" id)
-    (org-entry-put nil "GTASKS-ETAG" etag)
-    (org-entry-put nil "GTASKS-UPDATED" updated))
-  ;; (org-entry-put nil "GTASKS-SELF-LINK" self-link)
-  )
-
+;; Create a new headline of a tasklist.
 (ert-deftest my/update-or-create-headline_create-test ()
   (let (result)
     (let* ((file "./test/sample-blank.org")
 	   (tasklists (my/tasklists "./test/sample-tasklists.json"))
-	   (tasklist (ht-get tasklists 'items)))
+	   (tasklist (car (ht-get tasklists 'items)))) ;; one item
       (with-current-buffer (find-file-noselect file)
-	(let ((item (car tasklist))) ;; one item
+	(let ((item tasklist))
 	  (my/update-or-create-headline item))
 	;; test
 	(setq result (substring-no-properties (buffer-string)))
 	(set-buffer-modified-p nil)
 	(kill-buffer (current-buffer))))
-    (message "result=%s" result)
     (should (equal
 	     (length result)
 	     (length "* Tasks
@@ -69,6 +133,35 @@
 :GTASKS-UPDATED: 2022-03-12T00:24:59.564Z
 :END:
 ")))))
+
+;; Update an existing headline of a tasklist.
+(ert-deftest my/update-or-create-headline_update-test ()
+  (let (result)
+    (let* ((file "./test/sample-tasklists.org")
+	   (tasklists (my/tasklists "./test/sample-tasklists.json"))
+	   (tasklist (car (ht-get tasklists 'items)))) ;; one item hashtable
+      (with-current-buffer (find-file-noselect file)
+	;; Update properties
+	(ht-set! tasklist 'etag "\"SOMENEWETAG\"")
+	(ht-set! tasklist 'title "New Tasklist")
+	;; target
+	(my/update-or-create-headline tasklist)
+	;; test
+	(setq result (substring-no-properties (buffer-string)))
+	(set-buffer-modified-p nil)
+	(kill-buffer (current-buffer))))
+    ;; (with-output-to-temp-buffer "*yc temp out*"
+    ;;   (princ result))
+    (should (equal
+	     result
+	     "* New Tasklist
+:PROPERTIES:
+:ID:       98a4b293-125c-4178-a509-6936ced29d7e
+:GTASKS-ID: MDc1MzA1NTQ1OTYxODU5MTEwMTg6MDow
+:GTASKS-ETAG: \"SOMENEWETAG\"
+:GTASKS-UPDATED: 2022-03-12T00:24:59.564Z
+:END:
+"))))
 
 (defun my/headlines-from-tasklists (tasklists)
   (let ((items (ht-get tasklists 'items)))	; list of hashtables
@@ -83,7 +176,6 @@
     (let* ((file "./test/sample-blank.org")
 	   (tasklists (my/tasklists "./test/sample-tasklists.json")))
       (with-current-buffer (find-file-noselect file)
-	(gnus-goto-char (point-min))
 	;; target
 	(my/headlines-from-tasklists tasklists)
 	;; test
@@ -171,7 +263,7 @@
 	;; next task item
 	(setq task-items (cdr task-items))))))
 
-(ert-deftest my/headlines-from-tasks_create-test ()
+(ert-deftest my/headlines-from-tasks_create-test () ; TODO
   ;; setup
   (let (result)
     (let* ((file "./test/sample-blank.org")
@@ -183,8 +275,6 @@
 	(setq result (substring-no-properties (buffer-string)))
 	(set-buffer-modified-p nil)
 	(kill-buffer (current-buffer))))
-    ;; (with-output-to-temp-buffer "*yc temp out*"
-    ;;   (princ result))
     (should (equal nil nil)))) ; todo
 
 ;; TODO GTASKS-IDでヘッドラインを検索する
@@ -192,44 +282,3 @@
 ;; スキャンし，idとposのリストを作る
 ;; FIXME: Can we obtain only headlines having GTASKS-ID?
 ;; May not use this.
-(defun my/gtasks-id-alist ()
-  (org-map-entries
-   (lambda ()
-     (let ((gtasks-id (org-entry-get nil "GTASKS-ID")))
-       (cons gtasks-id (point))))
-   "+TODO=\"TODO\""
-   ;;"+TODO"
-   ;; "+GTASKS-ID=\"cF9ORW8yYWgyNTVES1dIbg\""
-   ))
-
-(ert-deftest my/gtasks-id-alist-test ()
-  (let (result)
-    (let* ((file "./test/sample-tasks.org"))
-      (with-current-buffer (find-file-noselect file)
-	;; target
-	(setq result (my/gtasks-id-alist))
-	;; test
-	(set-buffer-modified-p nil)
-	(kill-buffer (current-buffer))))
-    (should (equal (length result) 8))))
-
-(defun my/find (gtasks-id)
-  (let ((gtasks-id-alist
-	 (org-map-entries
-	  (lambda ()
-	    (let ((gtasks-id (org-entry-get nil "GTASKS-ID")))
-	      (cons gtasks-id (point))))
-	  "+TODO=\"TODO\"")))
-    (cdr (assoc gtasks-id gtasks-id-alist)))) ; returns the position.
-
-(ert-deftest my/find-test ()
-  (let (result)
-    (let* ((file "./test/sample-tasks.org"))
-      (with-current-buffer (find-file-noselect file)
-	;; target
-	(let ((gtasks-id "Y1hxLXB0ZHJZb0x0Z3I0Mw"))
-	  (setq result (my/find gtasks-id)))
-	;; test
-	(set-buffer-modified-p nil)
-	(kill-buffer (current-buffer))))
-    (should (eq result 589))))

@@ -7,7 +7,7 @@
 ;; tasklists are treated as level 1 headlines.
 (defun my/tasklists (file)
   (let ((json-object-type 'hash-table)
-	(json-array-type 'list)
+ 	(json-array-type 'list)
 	(json-key-type 'symbol))
     (let ((tasklists
 	   (json-read-file file)))

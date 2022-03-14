@@ -97,18 +97,17 @@
 	(org-id-get-create) ; file-visiting buffer only
 	))
       )
-    ;; compare etag
-    (let ((current-etag (org-entry-get nil "GTASKS-ETAG")))
-      (if (not (equal etag current-etag))
-	  ;; We need to update
-	  (progn
-	    (org-edit-headline title)
-	    (if (equal kind "tasks#task")
-		(org-todo 'todo))
-	    (org-entry-put nil "GTASKS-ID" gtasks-id)
-	    (org-entry-put nil "GTASKS-ETAG" etag)
-	    (org-entry-put nil "GTASKS-UPDATED" updated))
-	))))
+    ;; If ETAG is changed,
+    (if (not (equal etag (org-entry-get nil "GTASKS-ETAG")))
+	;; we need to update.
+	(progn
+	  (org-edit-headline title)
+	  (if (equal kind "tasks#task")
+	      (org-todo 'todo))
+	  (org-entry-put nil "GTASKS-ID" gtasks-id)
+	  (org-entry-put nil "GTASKS-ETAG" etag)
+	  (org-entry-put nil "GTASKS-UPDATED" updated))
+      )))
 
 ;; Create a new headline of a tasklist.
 (ert-deftest my/update-or-create-headline_create-test ()

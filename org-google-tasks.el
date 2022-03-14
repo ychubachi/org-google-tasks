@@ -52,38 +52,37 @@
 	   (tasklists (my/tasklists "./test/sample-tasklists.json"))
 	   (tasklist (ht-get tasklists 'items)))
       (with-current-buffer (find-file-noselect file)
-	(erase-buffer)		 ;; test for create
 	(let ((item (car tasklist))) ;; one item
 	  (my/update-or-create-headline item))
 	;; test
 	(setq result (substring-no-properties (buffer-string)))
 	(set-buffer-modified-p nil)
-	(kill-buffer (current-buffer)))
-      (should (equal
-	       (length result)
-	       (length "* Tasks
+	(kill-buffer (current-buffer))))
+    (message "result=%s" result)
+    (should (equal
+	     (length result)
+	     (length "* Tasks
 :PROPERTIES:
 :ID:       98a4b293-125c-4178-a509-6936ced29d7e
 :GTASKS-ID: MDc1MzA1NTQ1OTYxODU5MTEwMTg6MDow
 :GTASKS-ETAG: \"MjA3MjIyNTAxMA\"
 :GTASKS-UPDATED: 2022-03-12T00:24:59.564Z
 :END:
-"))))))
+")))))
 
-;; 1 lv要素（ID付き）
 (defun my/headlines-from-tasklists (tasklists)
   (let ((items (ht-get tasklists 'items)))	; list of hashtables
     (mapcar
      (lambda (item) (my/update-or-create-headline item))
      items)))
 ;;
+
 (ert-deftest my/headlines-from-tasklists_create-test ()
   ;; setup
   (let (result)
     (let* ((file "./test/sample-blank.org")
 	   (tasklists (my/tasklists "./test/sample-tasklists.json")))
       (with-current-buffer (find-file-noselect file)
-	(erase-buffer)		; create
 	(gnus-goto-char (point-min))
 	;; target
 	(my/headlines-from-tasklists tasklists)
@@ -140,7 +139,6 @@
 ;; :END:
 ;; ")))))
 
-
 (defun my/tasks ()
   (let ((json-object-type 'hash-table)
 	(json-array-type 'list)
@@ -183,8 +181,8 @@
 	(my/headlines-from-tasks tasks)
 	;; test
 	(setq result (substring-no-properties (buffer-string)))
-	;; (kill-buffer (current-buffer)) ??? Why we don't need it?
-	))
+	(set-buffer-modified-p nil)
+	(kill-buffer (current-buffer))))
     ;; (with-output-to-temp-buffer "*yc temp out*"
     ;;   (princ result))
     (should (equal nil nil)))) ; todo

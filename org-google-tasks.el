@@ -1,5 +1,8 @@
 ;;; -*- lexical-binding: t -*-
 
+;; Google Task API Ex
+;; https://developers.google.com/tasks/reference/rest/?apix=true
+
 (setq debug-on-error nil)
 
 (require 'ht)
@@ -281,3 +284,66 @@
 ;; スキャンし，idとposのリストを作る
 ;; FIXME: Can we obtain only headlines having GTASKS-ID?
 ;; May not use this.
+
+;;; Write
+(defun my/task-to-json ()
+  (let ((item (org-entry-get nil "ITEM"))
+		 (json (json-new-object)))
+    (json-add-to-object json "title" item)))
+
+(ert-deftest my/task-to-json-test ()
+  (let* ((input "** TODO [#B] Task\nThis is note string.\n")
+	(output
+	 (with-temp-buffer
+	   (org-mode)
+	   (insert input)
+	   ;; target
+	   (my/task-to-json)
+	   )))
+    (should (equal
+	     (json-serialize output)
+	     "{\"title\":\"Task\"}"))))
+
+;;; search
+(defun my/find-ancestor (type)
+  (let ((x (org-element-at-point)))
+    (while (and x
+                (not (eq (org-element-type x) type)))
+      (setq x (org-element-property :parent x)))
+    x))
+
+(ert-deftest my/find-ancestor-test-headline ()
+  (let* ((org "* Tasklist\n** TODO [#B] Task\nThis is note string.\n")
+	(result
+	 (with-temp-buffer
+	   (org-mode)
+	   (insert org)
+	   ;; target
+	   (my/find-ancestor 'headline)
+	   )))
+    (should (equal (org-element-property :raw-value result) "Task"))))
+
+(ert-deftest my/find-ancestor-test-section ()
+  (let* ((org "* Tasklist\n** TODO [#B] Task\nThis is note string.\n")
+	(result
+	 (with-temp-buffer
+	   (org-mode)
+	   (insert org)
+	   ;; target
+	   (my/find-ancestor 'section))))
+    (should (equal (org-element-property :raw-value result) 30))))
+
+(ert-deftest my/parse-tasklists ()
+  (let* ((org "* Tasklist
+* TODO Task
+")
+	(result
+	 (with-temp-buffer
+	   (org-mode)
+	   (insert org)
+	   ;; target
+	   (org-element-map (org-element-parse-buffer) 'headline
+	     (lambda (headline)
+	       ;; if the element is tasklist, store GTASKS-IDM
+	       (org-element-property :raw-value headline))))))
+    (should (eq result nil))))

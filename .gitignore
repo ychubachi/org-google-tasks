@@ -12,3 +12,4 @@
 *.~undo-tree
 
 ./tmp/
+/secret.org

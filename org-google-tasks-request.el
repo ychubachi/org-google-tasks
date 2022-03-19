@@ -2,7 +2,7 @@
 
 ;; call
 
-(straight-use-package 'oauth2)
+(require 'ht)
 (require 'oauth2)
 
 (defcustom my/gtasks-client-secret-json ""
@@ -10,6 +10,7 @@
   :type '(string)
   :group 'my)
 
+;;; GTasks API access utilities.
 (defun my/token ()
   (let* ((secret (json-read-file my/gtasks-client-secret-json))
        (installed (cdr (assq 'installed secret)))
@@ -20,14 +21,13 @@
        (scope "https://www.googleapis.com/auth/tasks"))
     (oauth2-auth-and-store auth-url token-url scope client-id client-secret)))
 
-;; parse RFC2616
 (defun my/parse-http-response (buffer)
+  "This function parses a buffer as an HTTP response. See RFC 2616.
+
+This returns a plist of :status, :reason, :header and :body."
   (let (status reason message header body)
       ;; decode coding
       (with-current-buffer buffer
-        ;; Debug
-        ;; (with-output-to-temp-buffer "*yc temp out*"
-        ;;   (princ (buffer-string)))
         ;; parse RFC2616
         (goto-char (point-min))
         ;; status-line
@@ -47,14 +47,44 @@
         ;; return results
         (list :status status :reason reason :header header :body body))))
 
-(defun my/tasklists-insert (title)
-  "Creates a new task list and adds it to the authenticated user's task lists."
-  (let* ((response-buffer (oauth2-url-retrieve-synchronously
+;;; Macro for Google Tasks API.
+(defmacro my/api (url &optional request-method request-data)
+  "This is a macro for REST API request.
+REQUEST-DATA is any emacs lisp object that json-serialize understands."
+  `(let* ((response-buffer (oauth2-url-retrieve-synchronously
 			 (my/token)
-			 "https://tasks.googleapis.com/tasks/v1/users/@me/lists"
-			 "POST"
-			 (format "{\"title\": \"%s\"}" (encode-coding-string title 'utf-8))))
-       (response (my/parse-http-response response-buffer)))
-    (decode-coding-string (plist-get response :body) 'utf-8)))
+			 ,url
+			 ,request-method
+			 (if ,request-data
+			     (encode-coding-string (json-serialize ,request-data) 'utf-8))))
+	  (response (my/parse-http-response response-buffer))
+	  (body (decode-coding-string (plist-get response :body) 'utf-8)))
+     (message body)
+     (json-parse-string body)))
 
-;; (my/tasklists-insert "My New Tasklist")
+;;; Google Tasks APIs for tasklists.
+(defun my/api-tasklists-list ()
+  "Creates a new task list and adds it to the authenticated user's task lists.
+
+See URL https://developers.google.com/tasks/reference/rest/v1/tasklists/list"
+  (my/api "https://tasks.googleapis.com/tasks/v1/users/@me/lists"
+	  "GET"))
+
+(defun my/api-tasklists-insert (tasklist)
+  "Creates a new task list and adds it to the authenticated user's task lists.
+
+TASKLIST is a tasklist object. This returns response in JSON strings.
+See URL https://developers.google.com/tasks/reference/rest/v1/tasklists/insert
+
+Usage:
+  (my/api-tasklists-insert '(:title \"My Tasklist\"))
+  (my/api-tasklists-insert '((title . \"My Tasklist\")))
+"
+  (my/api "https://tasks.googleapis.com/tasks/v1/users/@me/lists"
+	  "POST"
+	  tasklist))
+
+;; (my/api-tasklists-list)
+;; (my/api-tasklists-insert '(:title "はひふへほ"))
+;; (my/api-tasklists-insert '((title . "はひふ")))
+;; (my/api "https://tasks.googleapis.com/tasks/v1/users/@me/lists" "POST" '(:title "さしすせそ"))

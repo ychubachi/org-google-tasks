@@ -1,7 +1,6 @@
 ;;; -*- lexical-binding: t -*-
 
 ;; call
-
 (require 'ht)
 (require 'oauth2)
 
@@ -61,6 +60,7 @@ REQUEST-DATA is any emacs lisp object that json-serialize understands."
 			 (if ,request-data
 			     (encode-coding-string (json-serialize ,request-data) 'utf-8))))
 	  (response (org-sync-gtasks--parse-http-response response-buffer))
+          ;; TODO: Error handling
 	  (body (decode-coding-string (plist-get response :body) 'utf-8)))
      (json-parse-string body)))
 
@@ -133,3 +133,64 @@ Hello World!" "status" "needsAction")) #s(hash-table test equal data ("kind" "ta
       (should (equal
 	       (format "%s" result)
 	       "(M21GQnJNQm84YXdCWVZRcw MkhZNnRBVGE4eFk2UW1sdw aUhGRlpRMXhqbmZrN1JsQQ Y1hxLXB0ZHJZb0x0Z3I0Mw aEQ1TjhNOGRiS3p6VmR4dw dlAzdXRlWDh2Z0dsck4xcQ YWlqV0hsRV9lYVlQdkx5MQ MDc1MzA1NTQ1OTYxODU5MTEwMTg6MDow)")))))
+
+;;; Tasklists interface
+(defun org-sync-gtasks--default-tasklist ()
+  "This gets the defult tasklist. GTasks has at least one tasklist."
+  (let ((tasklists (org-sync-gtasks--api-tasklists-list)))
+    (aref (ht-get tasklists "items") 0)))
+
+(ert-deftest org-sync-gtasks--default-tasklist-test ()
+  (with-mock
+    (stub org-sync-gtasks--default-tasklist => (ht ("kind" "tasks#taskList")))
+    (let ((result (org-sync-gtasks--default-tasklist)))
+      (should (equal (ht-get result "kind") "tasks#taskList")))))
+
+(defun org-sync-gtasks-at-point ()
+  nil)
+
+(ert-deftest org-sync-gtasks-at-point ()
+  (let ((result))
+
+    )
+  )
+
+(defmacro org-sync-gtasks--test-with-org-buffer (&rest rest)
+    "A macro to write test functions which changes org texts.
+
+REST is a plist.
+:input input org text
+:output output org text
+ :target target body to test."
+    (let ((input (plist-get rest :input))
+          (output (plist-get rest :output))
+          (target (plist-get rest :target)))
+      `(let* ((org ,input)
+	   (result))
+         (with-current-buffer (find-file-noselect (make-temp-file "org"))
+	   (org-mode)
+	   (insert org)
+	   ;; target
+           ,target
+	   ;; test
+	   (setq result (substring-no-properties (buffer-string)))
+	   (set-buffer-modified-p nil)
+	   (kill-buffer (current-buffer)))
+         (should (equal result ,output)))))
+
+(ert-deftest org-sync-gtasks--test-with-org-buffer-test()
+  "Test org-sync-gtasks--test-with-org-buffer macro for development purpose."
+  (with-mock
+    (stub org-id-new => "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")
+    (org-sync-gtasks--test-with-org-buffer
+     :input
+     "* headline
+"
+     :output
+     "* headline
+:PROPERTIES:
+:ID:       xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+:END:
+"
+     :target
+     (org-id-get-create))))

@@ -146,37 +146,42 @@ Hello World!" "status" "needsAction")) #s(hash-table test equal data ("kind" "ta
     (let ((result (org-sync-gtasks--default-tasklist)))
       (should (equal (ht-get result "kind") "tasks#taskList")))))
 
-(defun org-sync-gtasks-at-point ()
-  nil)
-
-(ert-deftest org-sync-gtasks-at-point ()
-  (let ((result))
-
-    )
-  )
-
+;;;
 (defmacro org-sync-gtasks--test-with-org-buffer (&rest rest)
-    "A macro to write test functions which changes org texts.
+  "A macro to write test functions which changes org texts.
 
 REST is a plist.
 :input input org text
 :output output org text
  :target target body to test."
-    (let ((input (plist-get rest :input))
-          (output (plist-get rest :output))
-          (target (plist-get rest :target)))
-      `(let* ((org ,input)
-	   (result))
-         (with-current-buffer (find-file-noselect (make-temp-file "org"))
-	   (org-mode)
-	   (insert org)
-	   ;; target
-           ,target
-	   ;; test
-	   (setq result (substring-no-properties (buffer-string)))
-	   (set-buffer-modified-p nil)
-	   (kill-buffer (current-buffer)))
-         (should (equal result ,output)))))
+  (let ((target (plist-get rest :target))
+        (list (plist-get rest :list)))
+    ;; If only one example pair, make them to list.
+    (if (eq list nil)
+        (progn
+          (let ((input (plist-get rest :input))
+                (output (plist-get rest :output)))
+            (setq list (list (list :input input :output output))))))
+    ;; Iterate each example pair list.
+    (setq r (mapcar (lambda (x)
+                      (let ((input (plist-get x :input))
+                            (output (plist-get x :output)))
+                        `(let* ((org ,input)
+	                        (result))
+                           (with-current-buffer
+                               (find-file-noselect (make-temp-file "org"))
+	                     (org-mode)
+	                     (insert org)
+	                     ;; target
+                             ,target
+	                     ;; test
+	                     (setq result (substring-no-properties (buffer-string)))
+	                     (set-buffer-modified-p nil)
+	                     (kill-buffer (current-buffer)))
+                           (should (equal result ,output))))
+                      )
+                    list))
+    (push 'progn r)))
 
 (ert-deftest org-sync-gtasks--test-with-org-buffer-test()
   "Test org-sync-gtasks--test-with-org-buffer macro for development purpose."
@@ -194,3 +199,39 @@ REST is a plist.
 "
      :target
      (org-id-get-create))))
+
+;;;
+
+
+;;; get-tasklist-id
+(defun org-sync-gtasks--get-tasklist-id ()
+  (let ((gtasklist-id (org-entry-get nil "GTASKLIST-ID")))
+    (if (eq gtasklist-id nil)
+        (org-entry-put nil "GTASKLIST-ID" "NEW-GTASKLIST-ID"))))
+
+(ert-deftest org-sync-gtasks--get-tasklist-id-test ()
+  (org-sync-gtasks--test-with-org-buffer
+   :target
+   (org-sync-gtasks--get-tasklist-id)
+   :list
+   ((:input
+     "* headline
+"
+     :output
+     "* headline
+:PROPERTIES:
+:GTASKLIST-ID: NEW-GTASKLIST-ID
+:END:
+")
+    (:input
+     "* headline
+:PROPERTIES:
+:GTASKLIST-ID: SOME-GTASKLIST-ID
+:END:
+"
+     :output
+     "* headline
+:PROPERTIES:
+:GTASKLIST-ID: SOME-GTASKLIST-ID
+:END:
+"))))

@@ -330,13 +330,13 @@ REST is a plist.
 
 ;; TODO:
 ;;; Entry point 1
-(defun org-sync-gtasks-sync-at-point ()
+(defun org-sync-gtasks-sync-at-point () ; TODO: Use cache
   "Sync gtasks at point."
   (interactive)
   (let* ((tasklist-id (org-sync-gtasks--get-or-put-tasklist-id))
-         (task-id    (org-entry-get nil "GTASKS-TASK-ID"))
-         (etag       (org-entry-get nil "GTASKS-TASK-ETAG"))
-         (gtask      (org-sync-gtasks--make-gtask-from-headline))) ; TODO: --make-gtask
+         (task-id    (org-entry-get nil "GTASKS-ID"))
+         (etag       (org-entry-get nil "GTASKS-ETAG"))
+         (gtask      (org-sync-gtasks--make-gtask-from-headline)))
 
     ;; Make this headline a todo item.
     (if (org-entry-get nil "TODO")
@@ -358,12 +358,16 @@ REST is a plist.
         (let ((gtasks-etag (org-sync-gtasks--get-task-etag tasklist-id task-id)))
           (if (equal etag gtasks-etag)
               ;; Push the task to GTasks by patch method.
-              (progn
-                (org-sync-gtasks--api-tasks-patch tasklist-id task-id gtask)
-                (org-entry-put nil "GTASKS-TASK-ETAG" gtasks-etag)) ; TODO: Update all
+              (let ((new-gtask
+                     (org-sync-gtasks--api-tasks-patch tasklist-id task-id gtask)))
+                (org-entry-put nil "GTASKS-ETAG" (ht-get  new-gtask "etag"))) ; TODO: Update all
             ;; Pull the task from GTask by get method.
             (let ((new-gtask (org-sync-gtasks--api-tasks-get tasklist-id task-id)))
               (org-sync-gtasks--update-todo-headline tasklist-id new-gtask))))))))
+
+(defun org-sync-gtasks--do-sync-at-point (local-gtask remote-gtask)
+
+  )
 
 (ert-deftest org-sync-gtasks-sync-at-point-test ()
   (org-sync-gtasks--test-with-org-buffer
@@ -378,8 +382,8 @@ REST is a plist.
 ;;        "\\* My New Task
 ;; :PROPERTIES:
 ;; :GTASKS-TASKLIST-ID: .*
-;; :GTASKS-TASK-ID: .*
-;; :GTASKS-TASK-ETAG: .*
+;; :GTASKS-ID: .*
+;; :GTASKS-ETAG: .*
 ;; :END:
 ;; ")
       (:input
@@ -387,8 +391,8 @@ REST is a plist.
 SCHEDULED: <2022-03-23 Wed> DEADLINE: <2022-03-30 Tue>
 :PROPERTIES:
 :GTASKS-TASKLIST-ID: MDc1MzA1NTQ1OTYxODU5MTEwMTg6MDow
-:GTASKS-TASK-ID: bmFJZ2pFbGhQUXU0OU1xYQ
-:GTASKS-TASK-ETAG: \"FORCEUPDATE\"
+:GTASKS-ID: bmFJZ2pFbGhQUXU0OU1xYQ
+:GTASKS-ETAG: \"FORCEUPDATE\"
 :GTASKS-NOTES: This new notes text.
 :END:
 "
@@ -397,8 +401,8 @@ SCHEDULED: <2022-03-23 Wed> DEADLINE: <2022-03-30 Tue>
 SCHEDULED: <2022-03-23 Wed> DEADLINE: <2022-03-30 Tue>
 :PROPERTIES:
 :GTASKS-TASKLIST-ID: MDc1MzA1NTQ1OTYxODU5MTEwMTg6MDow
-:GTASKS-TASK-ID: bmFJZ2pFbGhQUXU0OU1xYQ
-:GTASKS-TASK-ETAG: .*
+:GTASKS-ID: bmFJZ2pFbGhQUXU0OU1xYQ
+:GTASKS-ETAG: .*
 :GTASKS-NOTES: This new notes text.
 :END:
 "))))
@@ -439,44 +443,44 @@ Hello World!" "status" "needsAction")) #s(hash-table test equal data ("kind" "ta
                )))))
 
 ;;; Make hedline
-(defun org-sync-gtasks--insert-todo-headline (tasklist-id gtask) ; TODO: --headline-insert-todo
+(defun org-sync-gtasks--insert-todo-headline (tasklist-id gtask) ; TODO: --headline-insert..
   "Make a new todo headline from GTasks' task."
   (org-insert-todo-heading-respect-content)
   (org-edit-headline (ht-get gtask "title"))
   (org-sync-gtasks--update-todo-headline tasklist-id gtask))
 
-(defun org-sync-gtasks--update-todo-headline (tasklist-id gtask) ; TODO: --headline-update-todo
+(defun org-sync-gtasks--update-todo-headline (tasklist-id gtask) ; TODO: --headline-update..
   "Update headline and its properties."
   (org-edit-headline (ht-get gtask "title"))
   (org-entry-put nil "GTASKS-TASKLIST-ID" tasklist-id)
-  (org-entry-put nil "GTASKS-TASK-ID" (ht-get gtask "id"))
-  (org-entry-put nil "GTASKS-TASK-ETAG" (ht-get gtask "etag"))
+  (org-entry-put nil "GTASKS-ID" (ht-get gtask "id"))
+  (org-entry-put nil "GTASKS-ETAG" (ht-get gtask "etag"))
   (if (ht-get gtask "parent")
-      (org-entry-put nil "GTASKS-TASK-PARENT" (ht-get gtask "parent")))
+      (org-entry-put nil "GTASKS-PARENT" (ht-get gtask "parent")))
   (if (ht-get gtask "notes")
-      (org-entry-put nil "GTASKS-TASK-NOTES" (ht-get gtask "notes")))
+      (org-entry-put nil "GTASKS-NOTES" (ht-get gtask "notes")))
   (if (ht-get gtask "due")
       (org-entry-put nil "DEADLINE" (ht-get gtask "due")))
   (let ((status (ht-get gtask "status")))
-    (org-entry-put nil "GTASKS-TASK-STATUS" status)
+    (org-entry-put nil "GTASKS-STATUS" status)
     (if (equal status "completed")
         (org-todo "DONE")))
   (if (ht-get gtask "completed")
-      (org-entry-put nil "GTASKS-TASK-COMPLETED" (ht-get gtask "completed")))
+      (org-entry-put nil "GTASKS-COMPLETED" (ht-get gtask "completed")))
   (if (ht-get gtask "deleted")
-      (org-entry-put nil "GTASKS-TASK-DELETED" "true"))
+      (org-entry-put nil "GTASKS-DELETED" "true"))
   (if (ht-get gtask "hidden")
-      (org-entry-put nil "GTASKS-TASK-HIDDEN" "true")) ; Read only parameter
+      (org-entry-put nil "GTASKS-HIDDEN" "true")) ; Read only parameter
   ;; TODO: links
 )
 
-(defun org-sync-gtasks--make-gtask-from-headline () ; TODO: make-gtask
+(defun org-sync-gtasks--make-gtask-from-headline ()
   "Make gtask as a hash table from the headline properties."
   (let ((gtask     (ht-create))
         (title    (org-entry-get nil "ITEM"))
         (todo     (org-entry-get nil "TODO"))
         (deadline (org-entry-get nil "DEADLINE"))
-        (notes    (org-entry-get nil "GTASKS-TASK-NOTES")))
+        (notes    (org-entry-get nil "GTASKS-NOTES")))
     (ht-set! gtask "title" title)
     (if deadline
         (ht-set! gtask "due" (format-time-string "%Y-%m-%dT%H:%M:00.000Z"
@@ -492,24 +496,27 @@ Hello World!" "status" "needsAction")) #s(hash-table test equal data ("kind" "ta
 ;;; Entry point 2
 (defun org-sync-gtasks-sync ()
   (interactive)
-  ;; Make a list of GTASKS-TASK-ID by looking up all org TODO headlines in agenda.
+  ;; Make a list of GTASKS-ID by looking up all org TODO headlines in agenda.
   (let ((todos)
        (tasklist-id (org-sync-gtasks--default-tasklist-id))
        (table       (org-sync-gtasks--make-id-to-gtask-table)))
-    ;; Collect all todo item with GTASKS-TASK-ID. ;; TODO Or collect All???
+    ;; Collect all todo item with GTASKS-ID. ;; TODO Or collect All???
+    ;; TODO: do not update copmleted tasks.
     (org-map-entries
      (lambda ()
-       (let ((gtasks-id (org-entry-get nil "GTASKS-TASK-ID")))
+       (let ((gtasks-id (org-entry-get nil "GTASKS-ID")))
+         ;; Sync headlines listed in the table only. Others might be completed.
          (when gtasks-id
-           (message "Update: %s" (org-entry-get nil "ITEM"))
-           (org-sync-gtasks-sync-at-point)
-           ;; Remove this todo from the table
-           (ht-remove! table gtasks-id))))
+           (let ((gtask (ht-get table gtasks-id)))
+             (when gtask
+               (message "GTasks update: %s" (org-entry-get nil "ITEM"))
+               (org-sync-gtasks-sync-at-point)
+               (ht-remove! table gtasks-id)))))) ; Remove this todo.
      "+TODO={.+}"
      'agenda)
     ;; Create org headlines from rest of the table.
     (dolist (gtasks-id (ht-keys table))
-      (message "Insert: %s" (ht-get (ht-get table gtasks-id) "title"))
+      (message "GTasks insert: %s" (ht-get (ht-get table gtasks-id) "title"))
       (org-sync-gtasks--insert-todo-headline
        tasklist-id
        (ht-get table gtasks-id)))))

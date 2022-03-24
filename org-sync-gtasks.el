@@ -7,8 +7,8 @@
 ;;; For tests.
 (require 'el-mock)
 
-(defcustom org-sync-gtasks--gtasks-client-secret-json ""
-  "JSON file location to client secret."
+(defcustom org-sync-gtasks--gtasks-client-secret-json "~/.client_secret.json"
+  "The location to your client secret JSON file for GTasks."
   :type '(string)
   :group 'my)
 
@@ -49,7 +49,7 @@ This returns a plist of :status, :reason, :header and :body."
         ;; return results
         (list :status status :reason reason :header header :body body))))
 
-;;; Macro for Google Tasks API.
+;;; Google Tasks APIs for tasklists/tasks.
 (defmacro org-sync-gtasks--api (url &optional request-method request-data)
   "This is a macro for Google Tasks API request.
 REQUEST-DATA is any emacs lisp object that json-serialize understands.
@@ -70,17 +70,21 @@ Usage: TODO
 	  (body (decode-coding-string (plist-get response :body) 'utf-8)))
      ;; Error in HTTP response
      (if (not (eq status 200))
-         (error "GTask API error: %s" reason))
+         (progn
+           (error
+            "GTask HTTP error: %s\nurl=%s,\nrequest method=%s\nrequest data=%s"
+            reason ,url ,request-method ,request-data)))
      :status status :reason reason
      ;; Error in HTTP response body
      (setq result (json-parse-string body))
      ;; Errors in JSON response
      (let ((error-data (ht-get result "error")))
        (if error-data
-           (error "GTask API error: %s" (ht-get error-data "message"))))
+           (error "GTask API error: %s (%s)"
+                  (ht-get error-data "message")
+                  error-data)))
      result))
 
-;;; Google Tasks APIs for tasklists.
 (defun org-sync-gtasks--api-tasklists-list ()
   "Creates a new task list and adds it to the authenticated user's task lists.
 
@@ -116,7 +120,6 @@ Usage:
 ;; (org-sync-gtasks--api-tasklists-insert '(:title "楽しいお仕事一覧"))
 ;; => #s(hash-table size 6 test equal rehash-size 1.5 rehash-threshold 0.8125 data ("kind" "tasks#taskList" "id" "dUxIS2F5ckxWTnlsa3NvRQ" "etag" "\"LTEzNDU2Nzc3OTY\"" "title" "楽しいお仕事一覧" "updated" "2022-03-22T04:02:43.458Z" "selfLink" "https://www.googleapis.com/tasks/v1/users/@me/lists/dUxIS2F5ckxWTnlsa3NvRQ"))
 
-;;; Google Tasks APIs for tasks.
 (defun org-sync-gtasks--api-tasks-list (tasklist)
   "Returns all tasks in the specified task list.
 
@@ -329,83 +332,6 @@ REST is a plist.
 ")))))
 
 ;; TODO:
-;;; Entry point 1
-(defun org-sync-gtasks-sync-at-point () ; TODO: Use cache
-  "Sync gtasks at point."
-  (interactive)
-  (let* ((tasklist-id (org-sync-gtasks--get-or-put-tasklist-id))
-         (task-id    (org-entry-get nil "GTASKS-ID"))
-         (etag       (org-entry-get nil "GTASKS-ETAG"))
-         (gtask      (org-sync-gtasks--make-gtask-from-headline)))
-
-    ;; Make this headline a todo item.
-    (if (org-entry-get nil "TODO")
-        nil
-      (org-entry-put nil "TODO" "TODO") )
-
-    ;; If the task doesn't have task-id,
-    (if (eq task-id nil)
-        ;; Insert a new task to GTasks and put its properties to the headline.
-        (let ((new-gtask (org-sync-gtasks--api-tasks-insert
-                          tasklist-id
-                          gtask)))
-          (org-sync-gtasks--update-todo-headline tasklist-id new-gtask))
-
-      (progn
-        ;; Push or Pull the task to GTask
-        ;;   Compare etags. If etags are defferent, get the task from GTasks
-        ;;   Otherwise, patch the task to GTasks
-        (let ((gtasks-etag (org-sync-gtasks--get-task-etag tasklist-id task-id)))
-          (if (equal etag gtasks-etag)
-              ;; Push the task to GTasks by patch method.
-              (let ((new-gtask
-                     (org-sync-gtasks--api-tasks-patch tasklist-id task-id gtask)))
-                (org-entry-put nil "GTASKS-ETAG" (ht-get  new-gtask "etag"))) ; TODO: Update all
-            ;; Pull the task from GTask by get method.
-            (let ((new-gtask (org-sync-gtasks--api-tasks-get tasklist-id task-id)))
-              (org-sync-gtasks--update-todo-headline tasklist-id new-gtask))))))))
-
-(defun org-sync-gtasks--do-sync-at-point (local-gtask remote-gtask)
-
-  )
-
-(ert-deftest org-sync-gtasks-sync-at-point-test ()
-  (org-sync-gtasks--test-with-org-buffer
-     :target
-     (org-sync-gtasks-sync-at-point)
-     :list
-     (
-;;       (:input
-;;        "* My New Task
-;; "
-;;        :output
-;;        "\\* My New Task
-;; :PROPERTIES:
-;; :GTASKS-TASKLIST-ID: .*
-;; :GTASKS-ID: .*
-;; :GTASKS-ETAG: .*
-;; :END:
-;; ")
-      (:input
-       "* Important Task
-SCHEDULED: <2022-03-23 Wed> DEADLINE: <2022-03-30 Tue>
-:PROPERTIES:
-:GTASKS-TASKLIST-ID: MDc1MzA1NTQ1OTYxODU5MTEwMTg6MDow
-:GTASKS-ID: bmFJZ2pFbGhQUXU0OU1xYQ
-:GTASKS-ETAG: \"FORCEUPDATE\"
-:GTASKS-NOTES: This new notes text.
-:END:
-"
-       :output
-       "\\* Important Task
-SCHEDULED: <2022-03-23 Wed> DEADLINE: <2022-03-30 Tue>
-:PROPERTIES:
-:GTASKS-TASKLIST-ID: MDc1MzA1NTQ1OTYxODU5MTEwMTg6MDow
-:GTASKS-ID: bmFJZ2pFbGhQUXU0OU1xYQ
-:GTASKS-ETAG: .*
-:GTASKS-NOTES: This new notes text.
-:END:
-"))))
 ;;; Pull Gtasks task to org file.
 (defun org-sync-gtasks--make-id-to-gtask-table ()
   "Create a hash table for looking up tasklist or task items by the id."
@@ -493,28 +419,118 @@ Hello World!" "status" "needsAction")) #s(hash-table test equal data ("kind" "ta
           (org-entry-put nil "GTASKS-STATUS" "completed")))
     gtask))
 
+;;; Entry point 1
+(defun org-sync-gtasks-sync-at-point (&optional cache)
+  "Synchronize GTasks and an Org todo headline at point.
+
+This command Synchronizes the todo headlines at your cursor.
+Make the headline as TODO if not, and create a new GTasks task item."
+  (interactive)
+  ;; Check major-mode
+  (if (not (eq major-mode 'org-mode))
+      (error "Please use this command in org-mode"))
+  (let* ((tasklist-id (org-sync-gtasks--get-or-put-tasklist-id))
+         (task-id    (org-entry-get nil "GTASKS-ID"))
+         (etag       (org-entry-get nil "GTASKS-ETAG"))
+         (gtask      (org-sync-gtasks--make-gtask-from-headline)))
+
+    ;; Make this headline a todo item.
+    (if (org-entry-get nil "TODO")
+        nil
+      (org-entry-put nil "TODO" "TODO") )
+
+     ;; Update Org headline's properties.
+     (org-sync-gtasks--update-todo-headline
+       tasklist-id
+      (cond
+       ;; If the task doesn't have gtask-id,
+       ((eq task-id nil)
+        ;; Insert a new task to GTasks.
+        (org-sync-gtasks--api-tasks-insert tasklist-id gtask))
+       ;; If the task has gtask-id,
+       (t
+         ;; Push or Pull the task to GTask
+         ;;   Compare etags. If etags are defferent, get the task from GTasks
+         ;;   Otherwise, patch the task to GTasks
+        (cond
+         ;; Compare Org headline's etag and remote GTasks etag.
+         ((equal
+           etag
+           (if (and cache (ht-get cache task-id))
+               (ht-get (ht-get cache task-id) "etag")
+              (org-sync-gtasks--get-task-etag tasklist-id task-id)))
+           ;; If they are equal, push the task to GTasks by patch method.
+          (org-sync-gtasks--api-tasks-patch tasklist-id task-id gtask))
+         (t
+           ;; Pull the task from GTask by get method.
+           (if (and cache (ht-get cache task-id))
+               (ht-get cache task-id)
+             (org-sync-gtasks--api-tasks-get tasklist-id task-id)))))))))
+
+(ert-deftest org-sync-gtasks-sync-at-point-test ()
+  (org-sync-gtasks--test-with-org-buffer
+     :target
+     (org-sync-gtasks-sync-at-point)
+     :list
+     (
+;;       (:input
+;;        "* My New Task
+;; "
+;;        :output
+;;        "\\* My New Task
+;; :PROPERTIES:
+;; :GTASKS-TASKLIST-ID: .*
+;; :GTASKS-ID: .*
+;; :GTASKS-ETAG: .*
+;; :END:
+;; ")
+      (:input
+       "* Important Task
+SCHEDULED: <2022-03-23 Wed> DEADLINE: <2022-03-30 Tue>
+:PROPERTIES:
+:GTASKS-TASKLIST-ID: MDc1MzA1NTQ1OTYxODU5MTEwMTg6MDow
+:GTASKS-ID: bmFJZ2pFbGhQUXU0OU1xYQ
+:GTASKS-ETAG: \"FORCEUPDATE\"
+:GTASKS-NOTES: This new notes text.
+:END:
+"
+       :output
+       "\\* Important Task
+SCHEDULED: <2022-03-23 Wed> DEADLINE: <2022-03-30 Tue>
+:PROPERTIES:
+:GTASKS-TASKLIST-ID: MDc1MzA1NTQ1OTYxODU5MTEwMTg6MDow
+:GTASKS-ID: bmFJZ2pFbGhQUXU0OU1xYQ
+:GTASKS-ETAG: .*
+:GTASKS-NOTES: This new notes text.
+:END:
+"))))
 ;;; Entry point 2
 (defun org-sync-gtasks-sync ()
+  "Synchronize GTasks and Org todo headlines.
+
+Synchronize every todo headlines with GTASKS-ID property.
+Also, pull other GTasks tasks as new headines."
   (interactive)
+  ;; Check major-mode
+  (if (not (eq major-mode 'org-mode))
+      (error "Please use this command in org-mode"))
   ;; Make a list of GTASKS-ID by looking up all org TODO headlines in agenda.
   (let ((todos)
        (tasklist-id (org-sync-gtasks--default-tasklist-id))
        (table       (org-sync-gtasks--make-id-to-gtask-table)))
-    ;; Collect all todo item with GTASKS-ID. ;; TODO Or collect All???
-    ;; TODO: do not update copmleted tasks.
     (org-map-entries
      (lambda ()
+       ;; Update todo headlines with valid GTASKS-ID.
+       ;; TODO: do not update copmleted or deleted tasks.
        (let ((gtasks-id (org-entry-get nil "GTASKS-ID")))
-         ;; Sync headlines listed in the table only. Others might be completed.
-         (when gtasks-id
-           (let ((gtask (ht-get table gtasks-id)))
-             (when gtask
-               (message "GTasks update: %s" (org-entry-get nil "ITEM"))
-               (org-sync-gtasks-sync-at-point)
-               (ht-remove! table gtasks-id)))))) ; Remove this todo.
+         (when (and  gtasks-id
+                     (not (equal gtasks-id "")))
+           (message "GTasks update: %s" (org-entry-get nil "ITEM"))
+           (org-sync-gtasks-sync-at-point table)
+           (ht-remove! table gtasks-id)))) ; Remove this todo.
      "+TODO={.+}"
      'agenda)
-    ;; Create org headlines from rest of the table.
+    ;; Insert org headlines from rest of the table.
     (dolist (gtasks-id (ht-keys table))
       (message "GTasks insert: %s" (ht-get (ht-get table gtasks-id) "title"))
       (org-sync-gtasks--insert-todo-headline

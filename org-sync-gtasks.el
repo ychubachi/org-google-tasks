@@ -1,6 +1,12 @@
 ;;; -*- lexical-binding: t -*-
+;;; org-sync-gtasks.el --- org-sync-gtasks.el
+;; Author: ychubachi
+;; Version: 0.0.1
+;; Package-Requires: ((oauth2 "0.16") (ht "2.4"))
+;;; Commentary:
+;; This program is free software
+;;; Code:
 
-;; call
 (require 'ht)
 (require 'oauth2)
 
@@ -529,3 +535,6 @@ Also, pull other GTasks tasks as new headines."
       (org-sync-gtasks--insert-todo-headline
        tasklist-id
        (ht-get table gtasks-id)))))
+
+(provide 'org-sync-gtasks)
+;;; org-sync-gtasks.el ends here

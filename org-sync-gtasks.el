@@ -7,14 +7,14 @@
 ;;; For tests.
 (require 'el-mock)
 
-(defcustom org-sync-gtasks--gtasks-client-secret-json "~/.client_secret.json"
+(defcustom org-sync-gtasks--client-secret-json "~/.client_secret.json"
   "The location to your client secret JSON file for GTasks."
   :type '(string)
   :group 'my)
 
 ;;; GTasks API access utilities.
 (defun org-sync-gtasks--token ()
-  (let* ((secret (json-read-file org-sync-gtasks--gtasks-client-secret-json))
+  (let* ((secret (json-read-file org-sync-gtasks--client-secret-json))
        (installed (cdr (assq 'installed secret)))
        (client-id (cdr (assq 'client_id installed)))
        (client-secret (cdr (assq 'client_secret installed)))

@@ -7,6 +7,7 @@
 ;; This program is free software
 ;;; Code:
 
+(require 'org)
 (require 'ht)
 (require 'oauth2)
 
@@ -33,7 +34,7 @@
   "This function parses a buffer as an HTTP response. See RFC 2616.
 
 This returns a plist of :status, :reason, :header and :body."
-  (let (status reason message header body)
+  (let (status reason header body)
       ;; decode coding
       (with-current-buffer buffer
         ;; parse RFC2616
@@ -251,7 +252,7 @@ REST is a plist.
                 (output (plist-get rest :output)))
             (setq list (list (list :input input :output output))))))
     ;; Iterate each example pair list.
-    (setq r (mapcar (lambda (x)
+    (let ((r (mapcar (lambda (x)
                       (let ((input (plist-get x :input))
                             (output (plist-get x :output)))
                         `(let* ((org ,input)
@@ -268,8 +269,8 @@ REST is a plist.
 	                     (kill-buffer (current-buffer)))
                            (should (string-match ,output result))))
                       )
-                    list))
-    (push 'progn r)))
+                     list)))
+      (push 'progn r))))
 
 (ert-deftest org-sync-gtasks--test-with-org-buffer-test()
   "Test org-sync-gtasks--test-with-org-buffer macro for development purpose."
@@ -286,9 +287,7 @@ REST is a plist.
 :END:
 "
      :target
-     (org-id-get-create))))
-
-;;;
+     (org-id-get-create)))) ;; this needs file related buffers.
 
 ;;; get-tasklist-id
 (defun org-sync-gtasks--get-or-put-tasklist-id () ; TODO: --headlie-get-or-put-tasklist-id
@@ -514,8 +513,7 @@ Also, pull other GTasks tasks as new headines."
   (if (not (eq major-mode 'org-mode))
       (error "Please use this command in org-mode"))
   ;; Make a list of GTASKS-ID by looking up all org TODO headlines in agenda.
-  (let ((todos)
-       (tasklist-id (org-sync-gtasks--default-tasklist-id))
+  (let ((tasklist-id (org-sync-gtasks--default-tasklist-id))
        (table       (org-sync-gtasks--make-id-to-gtask-table)))
     (org-map-entries
      (lambda ()

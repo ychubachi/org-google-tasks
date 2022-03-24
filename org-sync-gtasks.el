@@ -202,24 +202,16 @@ Usage:
 ;; => error
 
 ;;; Defult tasklist.
-(defun org-sync-gtasks--default-tasklist ()
-  "This gets the defult tasklist. GTasks has at least one tasklist."
-  (let ((tasklists (org-sync-gtasks--api-tasklists-list)))
-    (aref (ht-get tasklists "items") 0)))
-
-(ert-deftest org-sync-gtasks--default-tasklist-test ()
-  (with-mock
-    (stub org-sync-gtasks--default-tasklist => (ht ("kind" "tasks#taskList")))
-    (let ((result (org-sync-gtasks--default-tasklist)))
-      (should (equal (ht-get result "kind") "tasks#taskList")))))
-
 (defun org-sync-gtasks--default-tasklist-id ()
   "This gets the defult tasklist ID."
-  (ht-get (org-sync-gtasks--default-tasklist) "id"))
+  (ht-get
+   (aref (ht-get (org-sync-gtasks--api-tasklists-list) "items") 0)
+   "id"))
 
 (ert-deftest org-sync-gtasks--default-tasklist-id-test ()
   (with-mock
-    (stub org-sync-gtasks--default-tasklist => (ht ("id" "SOME-GTASKLIST-ID")))
+    (stub org-sync-gtasks--api-tasklists-list =>
+          (ht ("items" `[,(ht ("id" "SOME-GTASKLIST-ID"))])))
     (let ((result (org-sync-gtasks--default-tasklist-id)))
       (should (equal result "SOME-GTASKLIST-ID")))))
 
@@ -458,6 +450,7 @@ Make the headline as TODO if not, and create a new GTasks task item."
            etag
            (if (and cache (ht-get cache task-id))
                (ht-get (ht-get cache task-id) "etag")
+              ;; TODO: do not use org-sync-gtasks--get-task-etag
               (org-sync-gtasks--get-task-etag tasklist-id task-id)))
            ;; If they are equal, push the task to GTasks by patch method.
           (org-sync-gtasks--api-tasks-patch tasklist-id task-id gtask))

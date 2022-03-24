@@ -50,9 +50,9 @@ REST is a plist.
 "
      :output
      "\\* headline
-  :PROPERTIES:
-  :ID: .*
-  :END:
+:PROPERTIES:
+:ID:       .*
+:END:
 "
      :target
      (org-id-get-create) ;; this needs file related buffers.
@@ -65,34 +65,35 @@ REST is a plist.
           (ht ("items" `[,(ht ("id" "SOME-GTASKLIST-ID"))])))
     (let ((result (org-sync-gtasks--default-tasklist-id)))
       (should (equal result "SOME-GTASKLIST-ID")))))
-;; (ert-deftest org-sync-gtasks--get-or-create-tasklist-id-test ()
-;;   (with-mock
-;;     (stub org-sync-gtasks--default-tasklist-id => "NEW-GTASKS-TASKLIST-ID")
-;;     (org-sync-gtasks--test-with-org-buffer
-;;      :target
-;;      (org-sync-gtasks--get-or-put-tasklist-id)
-;;      :list
-;;      ((:input
-;;        "* headline
-;; "
-;;        :output
-;;        "* headline
-;; :PROPERTIES:
-;; :GTASKS-TASKLIST-ID: NEW-GTASKS-TASKLIST-ID
-;; :END:
-;; ")
-;;       (:input
-;;        "* headline
-;; :PROPERTIES:
-;; :GTASKS-TASKLIST-ID: SOME-GTASKS-TASKLIST-ID
-;; :END:
-;; "
-;;        :output
-;;        "* headline
-;; :PROPERTIES:
-;; :GTASKS-TASKLIST-ID: SOME-GTASKS-TASKLIST-ID
-;; :END:
-;; ")))))
+
+(ert-deftest org-sync-gtasks--get-or-create-tasklist-id-test ()
+  (with-mock
+    (stub org-sync-gtasks--default-tasklist-id => "NEW-GTASKS-TASKLIST-ID")
+    (org-sync-gtasks--test-with-org-buffer
+     :target
+     (org-sync-gtasks--get-or-put-tasklist-id)
+     :list
+     ((:input
+       "* headline
+"
+       :output
+       "* headline
+:PROPERTIES:
+:GTASKS-TASKLIST-ID: NEW-GTASKS-TASKLIST-ID
+:END:
+")
+      (:input
+       "* headline
+:PROPERTIES:
+:GTASKS-TASKLIST-ID: SOME-GTASKS-TASKLIST-ID
+:END:
+"
+       :output
+       "* headline
+:PROPERTIES:
+:GTASKS-TASKLIST-ID: SOME-GTASKS-TASKLIST-ID
+:END:
+")))))
 
 ;; (ert-deftest org-sync-gtasks--make-id-to-gtask-table-test ()
 ;;   (with-mock

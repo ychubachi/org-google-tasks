@@ -2,7 +2,7 @@
 ;;; org-sync-gtasks.el --- org-sync-gtasks.el
 ;; Author: ychubachi
 ;; Version: 0.0.1
-;; Package-Requires: ((emacs "27.1") (oauth2 "0.16") (ht "2.4"))
+;; Package-Requires: ((emacs "27.1") (org "9.5.2") (oauth2 "0.16") (ht "2.4"))
 ;;; Commentary:
 ;; This program is free software
 ;;; Code:

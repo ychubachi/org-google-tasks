@@ -2,7 +2,7 @@
 ;;; org-sync-gtasks.el --- org-sync-gtasks.el
 ;; Author: ychubachi
 ;; Version: 0.0.1
-;; Package-Requires: ((oauth2 "0.16") (ht "2.4"))
+;; Package-Requires: ((emacs "27.1") (oauth2 "0.16") (ht "2.4"))
 ;;; Commentary:
 ;; This program is free software
 ;;; Code:
@@ -14,12 +14,12 @@
 ;;; For tests.
 (require 'el-mock)
 
+;;; Google Tasks APIs for tasklists/tasks.
 (defcustom org-sync-gtasks--client-secret-json "~/.client_secret.json"
   "The location to your client secret JSON file for GTasks."
   :type '(string)
   :group 'my)
 
-;;; GTasks API access utilities.
 (defun org-sync-gtasks--token ()
   (let* ((secret (json-read-file org-sync-gtasks--client-secret-json))
        (installed (cdr (assq 'installed secret)))
@@ -56,7 +56,6 @@ This returns a plist of :status, :reason, :header and :body."
         ;; return results
         (list :status status :reason reason :header header :body body))))
 
-;;; Google Tasks APIs for tasklists/tasks.
 (defmacro org-sync-gtasks--api (url &optional request-method request-data)
   "This is a macro for Google Tasks API request.
 REQUEST-DATA is any emacs lisp object that json-serialize understands.

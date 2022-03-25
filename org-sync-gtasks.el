@@ -356,7 +356,7 @@ Also, pull other GTasks tasks as new headines."
     (org-map-entries
      (lambda ()
        ;; Update todo headlines with valid GTASKS-ID.
-       ;; TODO: do not update copmleted or deleted tasks.
+       ;; TODO: Use the cache to determin the headline is need to update.
        (let ((gtasks-id (org-entry-get nil "GTASKS-ID")))
          (when (and  gtasks-id
                      (not (equal gtasks-id "")))

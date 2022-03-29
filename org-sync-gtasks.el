@@ -86,7 +86,7 @@ Usage: TODO
        (if error-data
            (error "GTask API error: %s (%s)"
                   (ht-get error-data "message")
-                  error-data)))
+                  error-data))) ;; TODO: more Echo datail?
      result))
 
 (defun org-sync-gtasks--api-tasklists-list ()
@@ -205,7 +205,7 @@ Usage:
 ;; (org-sync-gtasks--api-tasks-insert "HOGE" '(:title "My Task"))
 ;; => error
 
-;;; Org related functions.
+;;; Org headlines related functions.
 (defun org-sync-gtasks--default-tasklist-id ()
   "This gets the defult tasklist ID."
   (ht-get
@@ -280,7 +280,7 @@ Usage:
   (org-edit-headline (ht-get gtask "title"))
   (org-sync-gtasks--update-todo-headline tasklist-id gtask))
 
-(defun org-sync-gtasks--make-gtask-from-headline ()
+(defun org-sync-gtasks--make-gtask-from-headline () ; TODO: gtask -> task
   "Make gtask as a hash table from the headline properties."
   (let ((gtask     (ht-create))
         (title    (org-entry-get nil "ITEM"))
@@ -303,19 +303,19 @@ Usage:
     gtask))
 
 ;; TODO: test
-(defun org-sync-gtasks--get-gtask-from-cache-or-api (tasklist-id task-id cache)
+;;; Utilities
+(defun org-sync-gtasks--get-gtask-from-cache-or-api (tasklist-id task-id cache) ; TODO: Test
   (if (and cache (ht-get cache task-id))
       (ht-get cache task-id)
     (org-sync-gtasks--api-tasks-get tasklist-id task-id)))
 
-;; TODO: test
-(defun org-sync-gtasks--equal-p (task gtask)
+(defun org-sync-gtasks--equal-p (task gtask) ; TODO: Test
   (and
    (equal (ht-get task "title") (ht-get gtask "title"))
    (equal (ht-get task "status") (ht-get gtask "status")))) ; TODO: Other properties.
 
 ;;; Entry points
-(defun org-sync-gtasks-sync-at-point (&optional tasklist-id cache) ; TODO: TEST
+(defun org-sync-gtasks-sync-at-point (&optional tasklist-id cache) ; TODO: Test
   "Synchronize GTasks and an Org todo headline at point.
 
 This command Synchronizes the todo headlines at your cursor.
@@ -379,7 +379,8 @@ not same | ---      -> Get it from remote.
            (message "GTasks: Update %s" (ht-get task "title"))
            gtask))))))))
 
-(defun org-sync-gtasks-sync () ; TODO: TEST
+;; TODO: -sync -> -sync-agenda
+(defun org-sync-gtasks-sync () ; TODO: Test
   "Synchronize GTasks and Org todo headlines.
 
 Synchronize every todo headlines with GTASKS-ID property.

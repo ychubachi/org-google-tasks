@@ -71,6 +71,7 @@ Usage: TODO
           (status (plist-get response :status))
           (reason (plist-get response :reason))
 	  (body (decode-coding-string (plist-get response :body) 'utf-8)))
+     ;; (message "org-sync-gtasks--api %s %s" ,request-method ,url)
      ;; Error in HTTP response
      (if (not (eq status 200))
          (progn
@@ -211,12 +212,14 @@ Usage:
    (aref (ht-get (org-sync-gtasks--api-tasklists-list) "items") 0)
    "id"))
 
+;; TODO: Do only defualt tasklist. Give tasklist id.
+;; TODO: Rename table -> cache, add api.
 (defun org-sync-gtasks--make-id2gtask-table ()
   "Create a hash table for looking up tasklist or task items by the id."
   (let* ((table (ht-create))
 	 (tasklists (org-sync-gtasks--api-tasklists-list))
 	 (tasklists-items (ht-get tasklists "items")))
-    (dolist (tasklist (cl-coerce tasklists-items 'list))
+    (dolist (tasklist (cl-coerce tasklists-items 'list)) ; TODO: use dotimes for array.
       (let* ((tasklist-id (ht-get tasklist "id")))
 	;; Set the tasklist to the table.
 	;; (ht-set! table tasklist-id tasklist)
@@ -238,29 +241,38 @@ Usage:
 
 (defun org-sync-gtasks--update-todo-headline (tasklist-id gtask)
   "Update headline and its properties."
-  (org-edit-headline (ht-get gtask "title"))
-  (org-entry-put nil "GTASKS-TASKLIST-ID" tasklist-id)
-  (org-entry-put nil "GTASKS-ID" (ht-get gtask "id"))
-  (org-entry-put nil "GTASKS-ETAG" (ht-get gtask "etag"))
-  (if (ht-get gtask "parent")
-      (org-entry-put nil "GTASKS-PARENT" (ht-get gtask "parent")))
-  (if (ht-get gtask "notes")
-      (org-entry-put nil "GTASKS-NOTES" (ht-get gtask "notes")))
-  (if (ht-get gtask "due")
-      (org-entry-put nil "DEADLINE" (ht-get gtask "due")))
-  (let ((status (ht-get gtask "status")))
-    (when status
-      (org-entry-put nil "GTASKS-STATUS" status)
-      (if (equal status "completed")
-        (org-todo "DONE"))))
-  (if (ht-get gtask "completed")
-      (org-entry-put nil "GTASKS-COMPLETED" (ht-get gtask "completed")))
-  (if (ht-get gtask "deleted")
-      (org-entry-put nil "GTASKS-DELETED" "true"))
-  (if (ht-get gtask "hidden")
-      (org-entry-put nil "GTASKS-HIDDEN" "true")) ; Read only parameter
-  ;; TODO: links
-  )
+  (if gtask
+      (progn
+        ;; Update the TODO status.
+        (let ((status (ht-get gtask "status")))
+          (when status
+            (org-entry-put nil "GTASKS-STATUS" status)
+            (cond
+             ((and (equal status "needsAction") (eq (org-entry-get nil "TODO") nil))
+              (org-todo "TODO"))
+             ((equal status "completed")
+              (org-todo "DONE"))
+             (t nil))))
+        ;; Update the headline item.
+        (org-edit-headline (ht-get gtask "title"))
+        ;; Update other properties.
+        (org-entry-put nil "GTASKS-TASKLIST-ID" tasklist-id)
+        (org-entry-put nil "GTASKS-ID" (ht-get gtask "id"))
+        (org-entry-put nil "GTASKS-ETAG" (ht-get gtask "etag"))
+        (if (ht-get gtask "parent")
+            (org-entry-put nil "GTASKS-PARENT" (ht-get gtask "parent")))
+        (if (ht-get gtask "notes")
+            (org-entry-put nil "GTASKS-NOTES" (ht-get gtask "notes")))
+        (if (ht-get gtask "due")
+            (org-entry-put nil "DEADLINE" (ht-get gtask "due")))
+        (if (ht-get gtask "completed")
+            (org-entry-put nil "GTASKS-COMPLETED" (ht-get gtask "completed")))
+        (if (ht-get gtask "deleted")
+            (org-entry-put nil "GTASKS-DELETED" "true"))
+        (if (ht-get gtask "hidden")
+            (org-entry-put nil "GTASKS-HIDDEN" "true")) ; Read only parameter
+        ;; TODO: links
+        )))
 
 (defun org-sync-gtasks--insert-todo-headline (tasklist-id gtask)
   "Make a new todo headline from GTasks' task."
@@ -281,9 +293,8 @@ Usage:
     (if id   (ht-set! gtask "id"    id))
     (if etag (ht-set! gtask "etag"  etag))
     (if (equal todo "DONE")
-        (progn
-          (ht-set! gtask "status" "completed")
-          (org-entry-put nil "GTASKS-STATUS" "completed"))) ; TODO: Need?
+        (ht-set! gtask "status" "completed")
+      (ht-set! gtask "status" "needsAction"))
     (if deadline
         (ht-set! gtask "due" (format-time-string "%Y-%m-%dT%H:%M:00.000Z"
                                                  (date-to-time deadline))))
@@ -291,86 +302,117 @@ Usage:
         (ht-set! gtask "notes" notes))
     gtask))
 
+;; TODO: test
+(defun org-sync-gtasks--get-gtask-from-cache-or-api (tasklist-id task-id cache)
+  (if (and cache (ht-get cache task-id))
+      (ht-get cache task-id)
+    (org-sync-gtasks--api-tasks-get tasklist-id task-id)))
+
+;; TODO: test
+(defun org-sync-gtasks--equal-p (task gtask)
+  (and
+   (equal (ht-get task "title") (ht-get gtask "title"))
+   (equal (ht-get task "status") (ht-get gtask "status")))) ; TODO: Other properties.
+
 ;;; Entry points
-(defun org-sync-gtasks-sync-at-point (&optional cache) ; TODO: TEST
+(defun org-sync-gtasks-sync-at-point (&optional tasklist-id cache) ; TODO: TEST
   "Synchronize GTasks and an Org todo headline at point.
 
 This command Synchronizes the todo headlines at your cursor.
-Make the headline as TODO if not, and create a new GTasks task item."
+Make the headline as TODO if not, and create a new GTasks task item.
+
+Push or Pull the task to GTask
+  Compare etags. If etags are defferent, get the task from GTasks
+  Otherwise, patch the task to GTasks
+
+When etags are same, if those contents are same, nothing to update.
+Otherwise, push the task to GTasks.
+When etags are not same, pull the task from GTasks.
+
+etags    | contents
+-------------------
+same     | same     -> Nothing to do.
+same     | not same -> Patch remote.
+not same | ---      -> Get it from remote.
+"
   (interactive)
   ;; Check major-mode
   (if (not (eq major-mode 'org-mode))
       (error "Please use this command in org-mode"))
-  (let* ((tasklist-id (org-sync-gtasks--get-or-default-tasklist-id))
-         (gtask      (org-sync-gtasks--make-gtask-from-headline))
-         (task-id    (ht-get gtask "id"))
-         (etag       (ht-get gtask "etag")))
-
-    ;; Make this headline a todo item.
-    (if (org-entry-get nil "TODO")
-        nil
-      (org-entry-put nil "TODO" "TODO") ; TODO: Need?
-      )
+  (if (eq tasklist-id nil)
+      (setq tasklist-id (org-sync-gtasks--get-or-default-tasklist-id)))
+  (let* ((task (org-sync-gtasks--make-gtask-from-headline)) ; TODO: gtask -> task
+         (task-id (ht-get task "id")))
 
     ;; Update Org headline's properties.
     (org-sync-gtasks--update-todo-headline
      tasklist-id
      (cond
-      ;; If the task doesn't have gtask-id,
+      ((equal (ht-get task "status") "completed")
+       (message "GTasks: Completed %s" (ht-get task "title"))
+       nil)
       ((eq task-id nil)
-       ;; Insert a new task to GTasks.
-       (org-sync-gtasks--api-tasks-insert tasklist-id gtask))
-      ;; If the task has gtask-id,
+       ;; If the task doesn't have gtask-id, Insert a new task to GTasks.
+       (message "GTasks: Insert %s" (ht-get task "title"))
+       (org-sync-gtasks--api-tasks-insert tasklist-id task))
       (t
-       ;; Push or Pull the task to GTask
-       ;;   Compare etags. If etags are defferent, get the task from GTasks
-       ;;   Otherwise, patch the task to GTasks
-       (cond
-        ;; Compare Org headline's etag and remote GTasks etag.
-        ((equal
-          etag
-          (if (and cache (ht-get cache task-id))
-              (ht-get (ht-get cache task-id) "etag")
-            ;; TODO: do not use org-sync-gtasks--get-task-etag
-            (ht-get (org-sync-gtasks--api-tasks-get tasklist-id task-id) "etag")))
-         ;; If they are equal, push the task to GTasks by patch method.
-         (org-sync-gtasks--api-tasks-patch tasklist-id task-id gtask))
-        (t
-         ;; Pull the task from GTask by get method.
-         (if (and cache (ht-get cache task-id))
-             (ht-get cache task-id)
-           (org-sync-gtasks--api-tasks-get tasklist-id task-id)))))))))
+       ;; If the task has its task-id, update the headline or GTasks if needed.
+       (let ((gtask (org-sync-gtasks--get-gtask-from-cache-or-api
+                     tasklist-id task-id cache)))
+         (cond
+          ((equal (ht-get task "etag") (ht-get gtask "etag"))
+           (cond
+            ((org-sync-gtasks--equal-p task gtask)
+             ;; Nothin to update the headline.
+             (message "GTasks: Keep %s" (ht-get task "title"))
+             ;; (pp task)
+             ;; (pp gtask)
+             nil)
+            (t
+             ;; Update the GTasks.
+             (message "GTasks: Patch %s" (ht-get task "title"))
+             ;; (pp task)
+             ;; (pp gtask)
+             (org-sync-gtasks--api-tasks-patch tasklist-id task-id task))))
+          (t
+           ;; Update the headline.
+           (message "GTasks: Update %s" (ht-get task "title"))
+           gtask))))))))
 
 (defun org-sync-gtasks-sync () ; TODO: TEST
   "Synchronize GTasks and Org todo headlines.
 
 Synchronize every todo headlines with GTASKS-ID property.
-Also, pull other GTasks tasks as new headines."
+Also, pull other GTasks tasks as new headines.
+
+Deleted GTasks tasks are also needed to update to change stautus."
   (interactive)
   ;; Check major-mode
   (if (not (eq major-mode 'org-mode))
       (error "Please use this command in org-mode"))
   ;; Make a list of GTASKS-ID by looking up all org TODO headlines in agenda.
   (let ((tasklist-id (org-sync-gtasks--default-tasklist-id))
-        (table       (org-sync-gtasks--make-id2gtask-table)))
+        (table      (org-sync-gtasks--make-id2gtask-table)))
     (org-map-entries
      (lambda ()
        ;; Update todo headlines with valid GTASKS-ID.
        ;; TODO: Use the cache to determin the headline is need to update.
        (let ((gtasks-id (org-entry-get nil "GTASKS-ID")))
          (when (and  gtasks-id
-                     (not (equal gtasks-id "")))
-           (message "GTasks update: %s" (org-entry-get nil "ITEM"))
-           (org-sync-gtasks-sync-at-point table)
+                     ;;(not (equal gtasks-id ""))
+                     ;;(ht-get table gtasks-id) ;;
+                     )
+           (org-sync-gtasks-sync-at-point tasklist-id table)
            (ht-remove! table gtasks-id)))) ; Remove this todo.
      "+TODO={.+}"
      'agenda)
     ;; Insert org headlines from rest of the table.
     (dolist (gtasks-id (ht-keys table))
-      (message "GTasks insert: %s" (ht-get (ht-get table gtasks-id) "title"))
+      (message "GTasks: New %s" (ht-get (ht-get table gtasks-id) "title"))
       (org-sync-gtasks--insert-todo-headline
        tasklist-id
-       (ht-get table gtasks-id)))))
+       (ht-get table gtasks-id))))
+  (message "GTasks: Done"))
 
 (provide 'org-sync-gtasks)
 ;;; org-sync-gtasks.el ends here

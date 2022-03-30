@@ -5,7 +5,7 @@
 (undercover "*.el"
             (:report-format 'lcov)
             (:send-report nil)
-            (:exclude "org-sync-gtasks-api"))
+            (:exclude "org-sync-gtasks-api.el"))
 
 (require 'org-sync-gtasks)
 ;;; test-helper.el ends here

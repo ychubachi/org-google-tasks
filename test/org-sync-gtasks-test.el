@@ -151,7 +151,9 @@ Hello World!" "status" "needsAction")) #s(hash-table test equal data ("kind" "ta
      :target
      (let ((gtask (ht ("title" "TITLE")
                       ("id" "TEST-TASK-ID")
-                      ("etag" "TEST-ETAG"))))
+                      ("etag" "TEST-ETAG")
+                      ("notes" "TEST-NOTES")
+                      ("status" "needsAction"))))
        (org-sync-gtasks--update-todo-headline "TEST-TASKLIST-ID" gtask))
      ;; TODO: Test status equals completed case
      :list
@@ -159,11 +161,13 @@ Hello World!" "status" "needsAction")) #s(hash-table test equal data ("kind" "ta
        "* dummy
 "
        :output
-       "\\* TITLE
+       "\\* TODO TITLE
 :PROPERTIES:
 :GTASKS-TASKLIST-ID: TEST-TASKLIST-ID
 :GTASKS-ID: TEST-TASK-ID
 :GTASKS-ETAG: TEST-ETAG
+:GTASKS-NOTES: TEST-NOTES
+:GTASKS-STATUS: needsAction
 :END:
 ")))))
 

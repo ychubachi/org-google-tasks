@@ -13,3 +13,4 @@
 
 ./tmp/
 /secret.org
+/coverage/

@@ -2,10 +2,13 @@
 (message "Running tests on Emacs %s" emacs-version)
 
 (require 'undercover)
-(undercover "*.el"
-            (:report-format 'lcov)
-            (:send-report nil)
-            (:exclude "org-sync-gtasks-api.el"))
+;; (undercover "*.el"
+;;             (:report-format 'lcov)
+;;             (:send-report nil)
+;;             (:exclude "org-sync-gtasks-api.el"))
+(setq undercover-force-coverage t)
+(undercover "*.el" (:report-format 'simplecov)
+            (:send-report nil))
 
 (require 'org-sync-gtasks)
 ;;; test-helper.el ends here

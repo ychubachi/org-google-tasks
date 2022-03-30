@@ -6,6 +6,5 @@
 (development
  (depends-on "el-mock")
  (depends-on "ert-runner")
- (depends-on "undercover"
-             :git "https://github.com/undercover-el/undercover.el"
-             :branch "next"))
+ (depends-on "undercover")
+ (depends-on "coverage"))

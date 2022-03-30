@@ -49,7 +49,15 @@
   "Update headline and its properties."
   (if gtask
       (progn
-        ;; Update the TODO status.
+        ;; Update the headline and its properies.
+        (org-edit-headline (ht-get gtask "title"))
+        (org-entry-put nil "GTASKS-TASKLIST-ID" tasklist-id)
+        (org-entry-put nil "GTASKS-ID" (ht-get gtask "id"))
+        (org-entry-put nil "GTASKS-ETAG" (ht-get gtask "etag"))
+        (if (ht-get gtask "parent")
+            (org-entry-put nil "GTASKS-PARENT" (ht-get gtask "parent")))
+        (if (ht-get gtask "notes")
+            (org-entry-put nil "GTASKS-NOTES" (ht-get gtask "notes")))
         (let ((status (ht-get gtask "status")))
           (when status
             (org-entry-put nil "GTASKS-STATUS" status)
@@ -59,16 +67,6 @@
              ((equal status "completed")
               (org-todo "DONE"))
              (t nil))))
-        ;; Update the headline item.
-        (org-edit-headline (ht-get gtask "title"))
-        ;; Update other properties.
-        (org-entry-put nil "GTASKS-TASKLIST-ID" tasklist-id)
-        (org-entry-put nil "GTASKS-ID" (ht-get gtask "id"))
-        (org-entry-put nil "GTASKS-ETAG" (ht-get gtask "etag"))
-        (if (ht-get gtask "parent")
-            (org-entry-put nil "GTASKS-PARENT" (ht-get gtask "parent")))
-        (if (ht-get gtask "notes")
-            (org-entry-put nil "GTASKS-NOTES" (ht-get gtask "notes")))
         (if (ht-get gtask "due")
             (org-entry-put nil "DEADLINE" (ht-get gtask "due")))
         (if (ht-get gtask "completed")

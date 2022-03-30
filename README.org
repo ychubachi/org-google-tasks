@@ -1,2 +1,6 @@
+#+begin_src html
+<a href='https://coveralls.io/github/ychubachi/org-sync-gtasks?branch=main'><img src='https://coveralls.io/repos/github/ychubachi/org-sync-gtasks/badge.svg?branch=main' alt='Coverage Status' /></a>
+#+end_src
+
 # org-google-tasks
 Google Tasks for org-mode

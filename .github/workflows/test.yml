@@ -12,26 +12,48 @@ jobs:
     strategy:
       matrix:
         emacs-version:
-          - 27.1
-          - 27.2
+        - 27.1
+        - 27.2
+        - snapshot
     steps:
-      - uses: actions/checkout@v2
-      - uses: purcell/setup-emacs@master
-        with:
-          version: ${{ matrix.emacs-version }}
-      - uses: actions/cache@v2
-        id: cache-cask-packages
-        with:
-          path: .cask
-          key: cache-cask-packages-000
-      - uses: actions/cache@v2
-        id: cache-cask-executable
-        with:
-          path: ~/.cask
-          key: cache-cask-executable-000
-      - uses: cask/setup-cask@master
-        if: steps.cache-cask-executable.outputs.cache-hit != 'true'
-        with:
-          version: snapshot
-      - run: echo "$HOME/.cask/bin" >> $GITHUB_PATH
-      - run: make test
+    - uses: actions/checkout@v2
+    - uses: purcell/setup-emacs@master
+      with:
+        version: ${{ matrix.emacs-version }}
+    - uses: actions/cache@v2
+      id: cache-cask-packages
+      with:
+        path: .cask
+        key: cache-cask-packages-000
+    - uses: actions/cache@v2
+      id: cache-cask-executable
+      with:
+        path: ~/.cask
+        key: cache-cask-executable-000
+    - uses: cask/setup-cask@master
+      if: steps.cache-cask-executable.outputs.cache-hit != 'true'
+      with:
+        version: snapshot
+    - run: echo "$HOME/.cask/bin" >> $GITHUB_PATH
+    - name: Test
+      run: make test
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        flag-name: emacs-${{ matrix.emacs_version }}
+        parallel: true
+
+  finish:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Coveralls Finished
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.github_token }}
+        parallel-finished: true
+
+
+      - name: Coveralls GitHub Action
+       uses: coverallsapp/github-action@1.1.3

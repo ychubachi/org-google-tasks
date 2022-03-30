@@ -130,8 +130,7 @@ Usage:
 
 See URL https://developers.google.com/tasks/reference/rest/v1/tasks/list"
   (org-sync-gtasks--api
-   (format
-    "https://tasks.googleapis.com/tasks/v1/lists/%s/tasks" tasklist)
+   (format "https://tasks.googleapis.com/tasks/v1/lists/%s/tasks" tasklist)
    "GET"))
 
 ;; Test case:

@@ -1,6 +1,0 @@
-#+BEGIN_EXPORT html
-<a href='https://coveralls.io/github/ychubachi/org-sync-gtasks?branch=main'><img src='https://coveralls.io/repos/github/ychubachi/org-sync-gtasks/badge.svg?branch=main' alt='Coverage Status' /></a>
-#+END_EXPORT
-
-# org-google-tasks
-Google Tasks for org-mode

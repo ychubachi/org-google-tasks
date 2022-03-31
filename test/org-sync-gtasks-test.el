@@ -402,9 +402,9 @@ DEADLINE: .*
 :END:
 "))
 
-;; (ert-deftest org-sync-gtasks-sync-agenda-test/org-mode ()
-;;   "Not in org-mode"
-;;   (should-error (org-sync-gtasks-sync-agenda)))
+(ert-deftest org-sync-gtasks-sync-agenda-test/org-mode ()
+  "Not in org-mode"
+  (should-error (org-sync-gtasks-sync-agenda)))
 
 ;; (ert-deftest org-sync-gtasks-sync-agenda-test/no-new-tasks ()
 ;;   "No new tasks in Google Tasks"

@@ -190,16 +190,12 @@ Deleted GTasks tasks are also needed to update to change stautus."
       (error "Please use this command in org-mode"))
   ;; Make a list of GTASKS-ID by looking up all org TODO headlines in agenda.
   (let* ((tasklist-id (org-sync-gtasks--default-tasklist-id))
-         (table       (org-sync-gtasks--make-tasklist-cache tasklist-id)))
+         (table       (org-sync-gtasks--make-tasklist-cache tasklist-id))) ; TODO: table->cache
     (org-map-entries
      (lambda ()
        ;; Update todo headlines with valid GTASKS-ID.
-       ;; TODO: Use the cache to determin the headline is need to update.
        (let ((gtasks-id (org-entry-get nil "GTASKS-ID")))
-         (when (and  gtasks-id
-                     ;;(not (equal gtasks-id ""))
-                     ;;(ht-get table gtasks-id) ;;
-                     )
+         (when gtasks-id
            (org-sync-gtasks-sync-at-point tasklist-id table)
            (ht-remove! table gtasks-id)))) ; Remove this todo.
      "+TODO={.+}"
@@ -213,4 +209,5 @@ Deleted GTasks tasks are also needed to update to change stautus."
   (message "GTasks: Done"))
 
 (provide 'org-sync-gtasks)
+
 ;;; org-sync-gtasks.el ends here

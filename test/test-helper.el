@@ -1,11 +1,12 @@
 ;;; test-helper.el --- Helpers for org-google-tasks-test.el -*- lexical-binding: t -*-
 (message "Running tests on Emacs %s" emacs-version)
 
-(require 'undercover)
-(undercover "org-sync-gtasks.el"
+(when (require 'undercover nil t)
+  (undercover "org-sync-gtasks.el"
             (:report-format 'lcov)
             (:send-report nil)
-            (:exclude "org-sync-gtasks-api.el"))
+            (:exclude "org-sync-gtasks-api.el")))
+
 ;; (setq undercover-force-coverage t)
 ;; (undercover "org-sync-gtasks.el" (:report-format 'simplecov)
 ;;             (:send-report nil))

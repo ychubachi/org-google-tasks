@@ -17,6 +17,6 @@
 
 guard :shell do
   watch(%r{^org-sync-gtasks\.el|test/org-sync-gtasks-test\.el$}) do |m|
-    `cask exec ert-runner`
+    `UNDERCOVER_CONFIG='(setq undercover-force-coverage t) (undercover "org-sync-gtasks.el" (:report-format \'simplecov) (:send-report nil))' cask exec ert-runner`
   end
 end

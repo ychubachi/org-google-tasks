@@ -30,6 +30,16 @@ Don't forget to give Google Tasks access permitions to it.  Put your JSON file
 to `~/.client_secret.json`.  You can change this path by customizing
 `org-sync-gtasks--client-secret-json` variable.
 
+# Installation
+
+If you use leaf with straight,
+
+```
+  (leaf org-sync-gtasks
+    :straight (org-sync-gtasks :type git :host github
+                          :repo "ychubachi/org-sync-gtasks"))
+```
+
 # Limitations
 - This command can handle only your default tasklist of Google Tasks.
 - First time you connects to Google Tasks API, an error might be occured

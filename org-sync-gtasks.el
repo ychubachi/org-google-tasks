@@ -20,7 +20,6 @@
 
 (defun org-sync-gtasks--make-tasklist-cache (tasklist-id)
   "Create a hash table for looking up tasklist or task items by the id."
-  ;; TODO: Do only defualt tasklist. Give tasklist id.
   (let* ((table (ht-create))
          (tasks (org-sync-gtasks--api-tasks-list tasklist-id))
          (task-items (ht-get tasks "items")))
@@ -114,7 +113,7 @@
 
 ;;; Entry points
 ;;;###autoload
-(defun org-sync-gtasks-sync-at-point (&optional tasklist-id cache)
+(defun org-sync-gtasks-at-point (&optional tasklist-id cache)
   "Synchronize GTasks and an Org todo headline at point.
 
 This command Synchronizes the todo headlines at your cursor.
@@ -140,7 +139,7 @@ not same | ---      -> Get it from remote.
       (error "Please use this command in org-mode"))
   (if (eq tasklist-id nil)
       (setq tasklist-id (org-sync-gtasks--get-or-default-tasklist-id))) ; API
-  (let* ((task (org-sync-gtasks--make-task-from-headline)) ; TODO: gtask -> task
+  (let* ((task (org-sync-gtasks--make-task-from-headline))
          (task-id (ht-get task "id")))
 
     ;; Update Org headline's properties.
@@ -177,7 +176,7 @@ not same | ---      -> Get it from remote.
            gtask))))))))
 
 ;;;###autoload
-(defun org-sync-gtasks-sync-agenda () ; TODO: Test -sync-agend -> -agenda
+(defun org-sync-gtasks-agenda ()
   "Synchronize GTasks and Org todo headlines.
 
 Synchronize every todo headlines with GTASKS-ID property.
@@ -190,22 +189,22 @@ Deleted GTasks tasks are also needed to update to change stautus."
       (error "Please use this command in org-mode"))
   ;; Make a list of GTASKS-ID by looking up all org TODO headlines in agenda.
   (let* ((tasklist-id (org-sync-gtasks--default-tasklist-id))
-         (table       (org-sync-gtasks--make-tasklist-cache tasklist-id))) ; TODO: table->cache
+         (cache       (org-sync-gtasks--make-tasklist-cache tasklist-id)))
     (org-map-entries
      (lambda ()
        ;; Update todo headlines with valid GTASKS-ID.
        (let ((gtasks-id (org-entry-get nil "GTASKS-ID")))
          (when gtasks-id
-           (org-sync-gtasks-sync-at-point tasklist-id table)
-           (ht-remove! table gtasks-id)))) ; Remove this todo.
+           (org-sync-gtasks-at-point tasklist-id cache)
+           (ht-remove! cache gtasks-id)))) ; Remove this todo.
      "+TODO={.+}"
      'agenda)
-    ;; Insert org headlines from rest of the table.
-    (dolist (gtasks-id (ht-keys table))
-      (message "GTasks: New %s" (ht-get (ht-get table gtasks-id) "title"))
+    ;; Insert org headlines from rest of the cache.
+    (dolist (gtasks-id (ht-keys cache))
+      (message "GTasks: New %s" (ht-get (ht-get cache gtasks-id) "title"))
       (org-sync-gtasks--insert-todo-headline
        tasklist-id
-       (ht-get table gtasks-id))))
+       (ht-get cache gtasks-id))))
   (message "GTasks: Done"))
 
 (provide 'org-sync-gtasks)

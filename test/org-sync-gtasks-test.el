@@ -77,10 +77,10 @@ Hello World!" "status" "needsAction")) #s(hash-table test equal data ("kind" "ta
                "(aUhGRlpRMXhqbmZrN1JsQQ Y1hxLXB0ZHJZb0x0Z3I0Mw aEQ1TjhNOGRiS3p6VmR4dw dlAzdXRlWDh2Z0dsck4xcQ YWlqV0hsRV9lYVlQdkx5MQ)"
                )))))
 
-;; (ert-deftest org-sync-gtasks-sync-at-point-test ()
+;; (ert-deftest org-sync-gtasks-at-point-test ()
 ;;   (org-sync-gtasks--test-with-org-buffer
 ;;      :target
-;;      (org-sync-gtasks-sync-at-point)
+;;      (org-sync-gtasks-at-point)
 ;;      :list
 ;;      (
 ;; ;;       (:input
@@ -254,25 +254,25 @@ DEADLINE: .*
         (gtask (ht ("title" "other title") ("status" "status"))))
     (should (not (org-sync-gtasks--equal-p task gtask)))))
 
-(ert-deftest org-sync-gtasks-sync-at-point-test/check-org-mode ()
+(ert-deftest org-sync-gtasks-at-point-test/check-org-mode ()
   "Not in org-mode"
-  (should-error (org-sync-gtasks-sync-at-point)))
+  (should-error (org-sync-gtasks-at-point)))
 
-(ert-deftest org-sync-gtasks-sync-at-point-test/no-title ()
+(ert-deftest org-sync-gtasks-at-point-test/no-title ()
   "No title"
   (org-sync-gtasks--test-with-org-buffer
    :target
    (with-mock
      (stub org-sync-gtasks--get-or-default-tasklist-id =>
            "TASKLIST-ID")
-     (org-sync-gtasks-sync-at-point))
+     (org-sync-gtasks-at-point))
    :list
    ((:input
      ""
      :output
      ""))))
 
-(ert-deftest org-sync-gtasks-sync-at-point-test/insert ()
+(ert-deftest org-sync-gtasks-at-point-test/insert ()
   "Insert a new task to Google Tasks."
   (org-sync-gtasks--test-with-org-buffer
    :input
@@ -287,7 +287,7 @@ DEADLINE: .*
               ("id" "TASK-ID")
               ("etag" "ETAG")
               ("status" "needsAction")))
-    (org-sync-gtasks-sync-at-point))
+    (org-sync-gtasks-at-point))
    :output
    "\\* TODO Title
 :PROPERTIES:
@@ -298,7 +298,7 @@ DEADLINE: .*
 :END:
 "))
 
-(ert-deftest org-sync-gtasks-sync-at-point-test/keep ()
+(ert-deftest org-sync-gtasks-at-point-test/keep ()
   "Do nothing"
   (org-sync-gtasks--test-with-org-buffer
    :input
@@ -320,7 +320,7 @@ DEADLINE: .*
               ("id"     "TASK-ID")
               ("etag"   "ETAG")
               ("status" "needsAction")))
-    (org-sync-gtasks-sync-at-point))
+    (org-sync-gtasks-at-point))
    :output
    "\\* TODO Title
 :PROPERTIES:
@@ -331,7 +331,7 @@ DEADLINE: .*
 :END:
 "))
 
-(ert-deftest org-sync-gtasks-sync-at-point-test/patch ()
+(ert-deftest org-sync-gtasks-at-point-test/patch ()
   "Patch"
   (org-sync-gtasks--test-with-org-buffer
    :input
@@ -358,7 +358,7 @@ DEADLINE: .*
               ("id"     "TASK-ID")
               ("etag"   "ETAG")
               ("status" "needsAction")))
-    (org-sync-gtasks-sync-at-point))
+    (org-sync-gtasks-at-point))
    :output
    "\\* TODO Title
 :PROPERTIES:
@@ -369,7 +369,7 @@ DEADLINE: .*
 :END:
 "))
 
-(ert-deftest org-sync-gtasks-sync-at-point-test/update ()
+(ert-deftest org-sync-gtasks-at-point-test/update ()
   "Update"
   (org-sync-gtasks--test-with-org-buffer
    :input
@@ -391,7 +391,7 @@ DEADLINE: .*
               ("id"     "TASK-ID")
               ("etag"   "ETAG")
               ("status" "needsAction")))
-    (org-sync-gtasks-sync-at-point))
+    (org-sync-gtasks-at-point))
    :output
    "\\* TODO Title
 :PROPERTIES:
@@ -402,11 +402,11 @@ DEADLINE: .*
 :END:
 "))
 
-(ert-deftest org-sync-gtasks-sync-agenda-test/check-org-mode ()
+(ert-deftest org-sync-gtasks-agenda-test/check-org-mode ()
   "Not in org-mode"
-  (should-error (org-sync-gtasks-sync-agenda)))
+  (should-error (org-sync-gtasks-agenda)))
 
-(ert-deftest org-sync-gtasks-sync-agenda-test/no-new-tasks ()
+(ert-deftest org-sync-gtasks-agenda-test/no-new-tasks ()
   "No new tasks in Google Tasks"
   (org-sync-gtasks--test-with-org-buffer
    :input
@@ -424,7 +424,7 @@ DEADLINE: .*
            "TASKLIST-ID")
      (stub org-sync-gtasks--make-tasklist-cache =>
            (ht))
-     (stub org-sync-gtasks-sync-at-point => nil)
+     (stub org-sync-gtasks-at-point => nil)
      ;; (stub org-sync-gtasks--get-gtask-from-cache-or-api =>
      ;;      (ht ("title"  "Title")
      ;;          ("id"     "TASK-ID")
@@ -435,7 +435,7 @@ DEADLINE: .*
      ;;           ("id" "TASK-ID")
      ;;           ("etag" "ETAG")
      ;;           ("status" "needsAction")))
-     (org-sync-gtasks-sync-agenda) )
+     (org-sync-gtasks-agenda) )
    :output
    "\\* Title
 :PROPERTIES:
@@ -446,7 +446,7 @@ DEADLINE: .*
 :END:
 "))
 
-;; (ert-deftest org-sync-gtasks-sync-agenda-test/new-tasks ()
+;; (ert-deftest org-sync-gtasks-agenda-test/new-tasks ()
 ;;   "New tasks in Google Tasks"
 ;;   (org-sync-gtasks--test-with-org-buffer
 ;;    :input
@@ -463,7 +463,7 @@ DEADLINE: .*
 ;;      ;;           ("id" "TASK-ID")
 ;;      ;;           ("etag" "ETAG")
 ;;      ;;           ("status" "needsAction")))
-;;      (org-sync-gtasks-sync-agenda))
+;;      (org-sync-gtasks-agenda))
 ;;    :output
 ;;    "\\* TODO Title
 ;; :PROPERTIES:

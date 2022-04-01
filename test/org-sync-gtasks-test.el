@@ -254,7 +254,7 @@ DEADLINE: .*
         (gtask (ht ("title" "other title") ("status" "status"))))
     (should (not (org-sync-gtasks--equal-p task gtask)))))
 
-(ert-deftest org-sync-gtasks-sync-at-point-test/org-mode ()
+(ert-deftest org-sync-gtasks-sync-at-point-test/check-org-mode ()
   "Not in org-mode"
   (should-error (org-sync-gtasks-sync-at-point)))
 
@@ -402,42 +402,49 @@ DEADLINE: .*
 :END:
 "))
 
-(ert-deftest org-sync-gtasks-sync-agenda-test/org-mode ()
+(ert-deftest org-sync-gtasks-sync-agenda-test/check-org-mode ()
   "Not in org-mode"
   (should-error (org-sync-gtasks-sync-agenda)))
 
-;; (ert-deftest org-sync-gtasks-sync-agenda-test/no-new-tasks ()
-;;   "No new tasks in Google Tasks"
-;;   (org-sync-gtasks--test-with-org-buffer
-;;    :input
-;;    "* Title
-;; "
-;;    :target
-;;    (with-mock
-;;      (stub org-sync-gtasks--make-tasklist-cache =>
-;;           (ht))
-;;      (stub org-sync-gtasks--default-tasklist-id =>
-;;            "TASKLIST-ID")
-;;      (stub org-sync-gtasks--get-gtask-from-cache-or-api =>
-;;           (ht ("title"  "Title")
-;;               ("id"     "TASK-ID")
-;;               ("etag"   "ETAG")
-;;               ("status" "needsAction")))
-;;      ;; (stub org-sync-gtasks--api-tasks-insert =>
-;;      ;;       (ht ("title" "Title")
-;;      ;;           ("id" "TASK-ID")
-;;      ;;           ("etag" "ETAG")
-;;      ;;           ("status" "needsAction")))
-;;      (org-sync-gtasks-sync-agenda) )
-;;    :output
-;;    "\\* TODO Title
-;; :PROPERTIES:
-;; :GTASKS-TASKLIST-ID: TASKLIST-ID
-;; :GTASKS-ID: TASK-ID
-;; :GTASKS-ETAG: ETAG
-;; :GTASKS-STATUS: needsAction
-;; :END:
-;; "))
+(ert-deftest org-sync-gtasks-sync-agenda-test/no-new-tasks ()
+  "No new tasks in Google Tasks"
+  (org-sync-gtasks--test-with-org-buffer
+   :input
+   "* Title
+:PROPERTIES:
+:GTASKS-TASKLIST-ID: TASKLIST-ID
+:GTASKS-ID: TASK-ID
+:GTASKS-ETAG: ETAG
+:GTASKS-STATUS: needsAction
+:END:
+"
+   :target
+   (with-mock
+     (stub org-sync-gtasks--default-tasklist-id =>
+           "TASKLIST-ID")
+     (stub org-sync-gtasks--make-tasklist-cache =>
+           (ht))
+     (stub org-sync-gtasks-sync-at-point => nil)
+     ;; (stub org-sync-gtasks--get-gtask-from-cache-or-api =>
+     ;;      (ht ("title"  "Title")
+     ;;          ("id"     "TASK-ID")
+     ;;          ("etag"   "ETAG")
+     ;;          ("status" "needsAction")))
+     ;; (stub org-sync-gtasks--api-tasks-insert =>
+     ;;       (ht ("title" "Title")
+     ;;           ("id" "TASK-ID")
+     ;;           ("etag" "ETAG")
+     ;;           ("status" "needsAction")))
+     (org-sync-gtasks-sync-agenda) )
+   :output
+   "\\* Title
+:PROPERTIES:
+:GTASKS-TASKLIST-ID: TASKLIST-ID
+:GTASKS-ID: TASK-ID
+:GTASKS-ETAG: ETAG
+:GTASKS-STATUS: needsAction
+:END:
+"))
 
 ;; (ert-deftest org-sync-gtasks-sync-agenda-test/new-tasks ()
 ;;   "New tasks in Google Tasks"

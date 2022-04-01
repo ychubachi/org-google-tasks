@@ -177,7 +177,7 @@ not same | ---      -> Get it from remote.
            gtask))))))))
 
 ;;;###autoload
-(defun org-sync-gtasks-sync-agenda () ; TODO: Test
+(defun org-sync-gtasks-sync-agenda () ; TODO: Test -sync-agend -> -agenda
   "Synchronize GTasks and Org todo headlines.
 
 Synchronize every todo headlines with GTASKS-ID property.

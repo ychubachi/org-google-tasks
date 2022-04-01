@@ -11,17 +11,17 @@ This package provides two entriy points.
 Move your cursor to an Org TODO headline and `M-x org-sync-gtasks-at-point`.
 Then a new task is inserted to your default Google Tasks tasklist.  Several
 properties of a Google Tasks task will be added to the headline.  The GTASKS-ID
-property of a headline is the most important property which enables this command
-to determin the headline is synchronized to the Google Tasks item.
+property is the most important property which enables this command to determin
+the headline is already synchronized to the Google Tasks item.
 
 If you edit the task on Google Tasks side, using this command again will pull
 the changes to your Org TODO headline.  Or if you edit the Org TODO headline and
 use this command, the Google Tasks task will be updated.
 
 `M-x org-sync-gtasks-agenda` applies the `org-sync-gtasks-at-point` command to
-all your TODO headlines with a GTASKS-ID property in Org agenda files.  Plus,
-the tasks which are not in Org agend files are inserted as Org headlines to
-current cursor position.
+all your TODO headlines with the GTASKS-ID property in the Org agenda files.
+Plus, the new tasks in Google Tasks which are not in Org agend files are
+inserted as Org headlines at the current cursor position.
 
 # Configration
 

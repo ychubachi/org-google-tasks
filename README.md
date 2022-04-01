@@ -18,6 +18,11 @@ If you edit the task on Google Tasks, this command will pull the changes to your
 Org TODO headline.  Or if you edit the Org TODO headline and use this command
 again, Google Tasks task will be updated.
 
+`M-x org-sync-gtasks-agenda` applies the `org-sync-gtasks-at-point` command to
+all your TODO headlines with a GTASKS-ID property in Org agenda files.  Plus,
+the tasks which are not in Org agend files are inserted as Org headlines to
+current cursor position.
+
 # Configration
 
 Obtain your credential file with JSON format from Google Developres Console.

@@ -30,10 +30,11 @@ REST is a plist.
 	                     ;; target
                              ,target
 	                     ;; test
-	                     (setq result (substring-no-properties (buffer-string)))
+	                     (setq result-string
+                                   (substring-no-properties (buffer-string)))
 	                     (set-buffer-modified-p nil)
 	                     (kill-buffer (current-buffer)))
-                           (should (string-match ,output result))))
+                           (should (string-match ,output result-string))))
                       )
                      list)))
       (push 'progn r))))
@@ -215,15 +216,26 @@ DEADLINE: .*
      :list
      ((:input
        "* TODO TITLE
+DEADLINE: <2022-04-01 Fri>
 :PROPERTIES:
 :GTASKS-TASKLIST-ID: TEST-TASKLIST-ID
 :GTASKS-ID: TEST-TASK-ID
 :GTASKS-ETAG: TEST-ETAG
+:GTASKS-STATUS: TEST-STATUS
+:GTASKS-NOTES: TEST-NOTES
 :END:
 "
        :output
-       "")
-      ))))
+       "\\* TODO TITLE
+DEADLINE: <2022-04-01 Fri>
+:PROPERTIES:
+:GTASKS-TASKLIST-ID: TEST-TASKLIST-ID
+:GTASKS-ID: TEST-TASK-ID
+:GTASKS-ETAG: TEST-ETAG
+:GTASKS-STATUS: TEST-STATUS
+:GTASKS-NOTES: TEST-NOTES
+:END:
+")))))
 
 (ert-deftest org-sync-gtasks--get-gtask-from-cache-or-api ()
   ;; Case 1
@@ -271,6 +283,7 @@ DEADLINE: .*
      ""
      :output
      ""))))
+
 
 (ert-deftest org-sync-gtasks-at-point-test/insert ()
   "Insert a new task to Google Tasks."
@@ -405,6 +418,70 @@ DEADLINE: .*
 (ert-deftest org-sync-gtasks-agenda-test/check-org-mode ()
   "Not in org-mode"
   (should-error (org-sync-gtasks-agenda)))
+
+(ert-deftest org-sync-gtasks-agenda-test/done-and-completed ()
+  "Do nothing."
+  (org-sync-gtasks--test-with-org-buffer
+   :input
+   "* DONE Title
+:PROPERTIES:
+:GTASKS-TASKLIST-ID: TASKLIST-ID
+:GTASKS-ID: TASK-ID
+:GTASKS-ETAG: ETAG
+:GTASKS-STATUS: completed
+:END:
+"
+   :target
+   (with-mock
+    (stub org-sync-gtasks--get-or-default-tasklist-id =>
+          "TASKLIST-ID")
+    (org-sync-gtasks-at-point))
+   :output
+   "\\* DONE Title
+:PROPERTIES:
+:GTASKS-TASKLIST-ID: TASKLIST-ID
+:GTASKS-ID: TASK-ID
+:GTASKS-ETAG: ETAG
+:GTASKS-STATUS: completed
+:END:
+"))
+
+(ert-deftest org-sync-gtasks-agenda-test/done-and-needsAction ()
+  "If the headline is DONE but its status is needsAction, need to patch."
+  (org-sync-gtasks--test-with-org-buffer
+   :input
+   "* DONE Title
+:PROPERTIES:
+:GTASKS-TASKLIST-ID: TASKLIST-ID
+:GTASKS-ID: TASK-ID
+:GTASKS-ETAG: ETAG
+:GTASKS-STATUS: needsAction
+:END:
+"
+   :target
+   (with-mock
+    (stub org-sync-gtasks--get-or-default-tasklist-id =>
+          "TASKLIST-ID")
+    (stub org-sync-gtasks--get-gtask-from-cache-or-api =>
+          (ht ("title"  "Title")
+              ("id"     "TASK-ID")
+              ("etag"   "ETAG")
+              ("status" "needsAction")))
+     (stub org-sync-gtasks--api-tasks-patch =>
+           (ht ("title" "Title")
+               ("id" "TASK-ID")
+               ("etag" "ETAG")
+               ("status" "completed")))
+     (org-sync-gtasks-at-point))
+   :output
+   "\\* DONE Title
+:PROPERTIES:
+:GTASKS-TASKLIST-ID: TASKLIST-ID
+:GTASKS-ID: TASK-ID
+:GTASKS-ETAG: ETAG
+:GTASKS-STATUS: completed
+:END:
+"))
 
 (ert-deftest org-sync-gtasks-agenda-test/no-new-tasks ()
   "No new tasks in Google Tasks"

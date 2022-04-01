@@ -25,12 +25,12 @@ current cursor position.
 
 # Configration
 
-Obtain your credential file with JSON format from Google Developres Console.
+Obtain your credential file in JSON format from Google Developres Console.
 Don't forget to give Google Tasks access permitions to it.  Put your JSON file
 to `~/.client_secret.json`.  You can change this path by customizing
 `org-sync-gtasks--client-secret-json` variable.
 
 # Limitations
-- This command can handle only your default tasklist.
-- First time you try to connect to Google Tasks API, an error might be occured
-  in OAuth2 process.
+- This command can handle only your default tasklist of Google Tasks.
+- First time you connects to Google Tasks API, an error might be occured
+  in OAuth2 process.  Please try again in such case.

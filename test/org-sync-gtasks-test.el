@@ -149,6 +149,7 @@ Hello World!" "status" "needsAction")) #s(hash-table test equal data ("kind" "ta
      (let ((gtask (ht ("title" "TITLE")
                       ("id" "TEST-TASK-ID")
                       ("etag" "TEST-ETAG")
+                      ("parent" "TEST-PARENT")
                       ("notes" "TEST-NOTES")
                       ("status" "needsAction")
                       ("due" "12/31")
@@ -168,6 +169,7 @@ DEADLINE: .*
 :GTASKS-TASKLIST-ID: .*
 :GTASKS-ID: .*
 :GTASKS-ETAG: .*
+:GTASKS-PARENT: .*
 :GTASKS-NOTES: .*
 :GTASKS-STATUS: .*
 :GTASKS-COMPLETED: .*

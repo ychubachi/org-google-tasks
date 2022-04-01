@@ -161,7 +161,7 @@ not same | ---      -> Get it from remote.
          (cond
           ((equal (ht-get task "etag") (ht-get gtask "etag"))
            (cond
-            ((and (and (not (equal (org-entry-get nil "TODO") "DONE"))
+            ((and (and (not (equal (org-entry-get nil "TODO") "DONE")) ;; TODO: Move them to org-sync-gtasks--equal-p
                        (equal (ht-get task "status") "needsAction"))
                   (org-sync-gtasks--equal-p task gtask))
              ;; Nothing to update the headline.

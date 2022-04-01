@@ -502,19 +502,23 @@ DEADLINE: <2022-04-01 Fri>
      (stub org-sync-gtasks--default-tasklist-id =>
            "TASKLIST-ID")
      (stub org-sync-gtasks--make-tasklist-cache =>
-           (ht))
+           (ht ("TASK-ID"
+                (ht ("title"  "Title")
+                    ("id"     "TASK-ID")
+                    ("etag"   "ETAG")
+                    ("status" "needsAction")))))
      (stub org-sync-gtasks-at-point => nil)
-     ;; (stub org-sync-gtasks--get-gtask-from-cache-or-api =>
-     ;;      (ht ("title"  "Title")
-     ;;          ("id"     "TASK-ID")
-     ;;          ("etag"   "ETAG")
-     ;;          ("status" "needsAction")))
+     (stub org-sync-gtasks--get-gtask-from-cache-or-api =>
+          (ht ("title"  "Title")
+              ("id"     "TASK-ID")
+              ("etag"   "ETAG")
+              ("status" "needsAction")))
      ;; (stub org-sync-gtasks--api-tasks-insert =>
      ;;       (ht ("title" "Title")
      ;;           ("id" "TASK-ID")
      ;;           ("etag" "ETAG")
      ;;           ("status" "needsAction")))
-     (org-sync-gtasks-agenda) )
+     (org-sync-gtasks-agenda))
    :output
    "\\* Title
 :PROPERTIES:

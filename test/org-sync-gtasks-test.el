@@ -3,6 +3,7 @@
 (require 'org-sync-gtasks)
 ;;; For tests.
 (require 'el-mock)
+
 (defmacro org-sync-gtasks--test-with-org-buffer (&rest rest)
   "A macro to write test functions which changes org texts.
 
@@ -24,22 +25,22 @@ REST is a plist.
                         `(let* ((org ,input)
 	                        (result))
                            (with-current-buffer
-                               (find-file-noselect (make-temp-file "org"))
+                               (find-file-noselect (make-temp-file "org-"))
 	                     (org-mode)
 	                     (insert org)
 	                     ;; target
-                             ,target
-	                     ;; test
-	                     (setq result-string
-                                   (substring-no-properties (buffer-string)))
-	                     (set-buffer-modified-p nil)
-	                     (kill-buffer (current-buffer)))
-                           (should (string-match ,output result-string))))
-                      )
+                             (unwind-protect
+                                 ,target
+	                       ;; test
+	                       (setq result-string
+                                     (substring-no-properties (buffer-string)))
+	                       (set-buffer-modified-p nil)
+	                       (kill-buffer (current-buffer))))
+                           (should (string-match ,output result-string)))))
                      list)))
       (push 'progn r))))
 
-(ert-deftest org-sync-gtasks--test-with-org-buffer-test ()
+(ert-deftest org-sync-gtasks--test-with-org-buffer-test/org-mode ()
   "Test org-sync-gtasks--test-with-org-buffer macro for development purpose."
   (with-mock
     (stub org-id-new => "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")
@@ -64,7 +65,7 @@ REST is a plist.
    "* headline
 "
    :target
-   (error "test")
+   (should-error (error "test"))
    :output
    "\\* headline
 "))
@@ -539,101 +540,101 @@ DEADLINE: <2022-04-16 Sat>
 :END:
 "))
 
-(ert-deftest org-sync-gtasks-agenda-test/check-org-mode ()
-  "Not in org-mode"
-  (should-error (org-sync-gtasks-agenda)))
+;; (ert-deftest org-sync-gtasks-agenda-test/check-org-mode ()
+;;   "Not in org-mode"
+;;   (should-error (org-sync-gtasks-agenda)))
 
-(ert-deftest org-sync-gtasks-agenda-test/done-and-completed ()
-  "Do nothing."
-  (org-sync-gtasks--test-with-org-buffer
-   :input
-   "* DONE Title
-:PROPERTIES:
-:GTASKS-TASKLIST-ID: TASKLIST-ID
-:GTASKS-ID: TASK-ID
-:GTASKS-ETAG: ETAG
-:GTASKS-STATUS: completed
-:END:
-"
-   :target
-   (with-mock
-    (stub org-sync-gtasks--get-or-default-tasklist-id =>
-          "TASKLIST-ID")
-    (org-sync-gtasks-at-point))
-   :output
-   "\\* DONE Title
-:PROPERTIES:
-:GTASKS-TASKLIST-ID: TASKLIST-ID
-:GTASKS-ID: TASK-ID
-:GTASKS-ETAG: ETAG
-:GTASKS-STATUS: completed
-:END:
-"))
+;; (ert-deftest org-sync-gtasks-agenda-test/done-and-completed ()
+;;   "Do nothing."
+;;   (org-sync-gtasks--test-with-org-buffer
+;;    :input
+;;    "* DONE Title
+;; :PROPERTIES:
+;; :GTASKS-TASKLIST-ID: TASKLIST-ID
+;; :GTASKS-ID: TASK-ID
+;; :GTASKS-ETAG: ETAG
+;; :GTASKS-STATUS: completed
+;; :END:
+;; "
+;;    :target
+;;    (with-mock
+;;     (stub org-sync-gtasks--get-or-default-tasklist-id =>
+;;           "TASKLIST-ID")
+;;     (org-sync-gtasks-at-point))
+;;    :output
+;;    "\\* DONE Title
+;; :PROPERTIES:
+;; :GTASKS-TASKLIST-ID: TASKLIST-ID
+;; :GTASKS-ID: TASK-ID
+;; :GTASKS-ETAG: ETAG
+;; :GTASKS-STATUS: completed
+;; :END:
+;; "))
 
-(ert-deftest org-sync-gtasks-agenda-test/done-and-needsAction ()
-  "If the headline is DONE but its status is needsAction, need to patch."
-  (org-sync-gtasks--test-with-org-buffer
-   :input
-   "* DONE Title
-:PROPERTIES:
-:GTASKS-TASKLIST-ID: TASKLIST-ID
-:GTASKS-ID: TASK-ID
-:GTASKS-ETAG: ETAG
-:GTASKS-STATUS: needsAction
-:END:
-"
-   :target
-   (with-mock
-    (stub org-sync-gtasks--get-or-default-tasklist-id =>
-          "TASKLIST-ID")
-    (stub org-sync-gtasks--get-gtask-from-cache-or-api =>
-          (ht ("title"  "Title")
-              ("id"     "TASK-ID")
-              ("etag"   "ETAG")
-              ("status" "needsAction")))
-     (stub org-sync-gtasks--api-tasks-patch =>
-           (ht ("title" "Title")
-               ("id" "TASK-ID")
-               ("etag" "ETAG")
-               ("status" "completed")))
-     (org-sync-gtasks-at-point))
-   :output
-   "\\* DONE Title
-:PROPERTIES:
-:GTASKS-TASKLIST-ID: TASKLIST-ID
-:GTASKS-ID: TASK-ID
-:GTASKS-ETAG: ETAG
-:GTASKS-STATUS: completed
-:END:
-"))
+;; (ert-deftest org-sync-gtasks-agenda-test/done-and-needsAction ()
+;;   "If the headline is DONE but its status is needsAction, need to patch."
+;;   (org-sync-gtasks--test-with-org-buffer
+;;    :input
+;;    "* DONE Title
+;; :PROPERTIES:
+;; :GTASKS-TASKLIST-ID: TASKLIST-ID
+;; :GTASKS-ID: TASK-ID
+;; :GTASKS-ETAG: ETAG
+;; :GTASKS-STATUS: needsAction
+;; :END:
+;; "
+;;    :target
+;;    (with-mock
+;;     (stub org-sync-gtasks--get-or-default-tasklist-id =>
+;;           "TASKLIST-ID")
+;;     (stub org-sync-gtasks--get-gtask-from-cache-or-api =>
+;;           (ht ("title"  "Title")
+;;               ("id"     "TASK-ID")
+;;               ("etag"   "ETAG")
+;;               ("status" "needsAction")))
+;;      (stub org-sync-gtasks--api-tasks-patch =>
+;;            (ht ("title" "Title")
+;;                ("id" "TASK-ID")
+;;                ("etag" "ETAG")
+;;                ("status" "completed")))
+;;      (org-sync-gtasks-at-point))
+;;    :output
+;;    "\\* DONE Title
+;; :PROPERTIES:
+;; :GTASKS-TASKLIST-ID: TASKLIST-ID
+;; :GTASKS-ID: TASK-ID
+;; :GTASKS-ETAG: ETAG
+;; :GTASKS-STATUS: completed
+;; :END:
+;; "))
 
-(ert-deftest org-sync-gtasks-agenda-test/new-tasks ()
-  "No new tasks in Google Tasks"
-  (org-sync-gtasks--test-with-org-buffer
-   :input
-   "* TASK
-"
-   :target
-   (with-mock
-     (stub org-sync-gtasks--default-tasklist-id =>
-           "TASKLIST-ID")
-     (stub org-sync-gtasks--make-tasklist-cache =>
-           (ht ("TASK-ID"
-                (ht ("title"  "TITLE")
-                    ("id"     "TASK-ID")
-                    ("etag"   "ETAG")
-                    ("status" "needsAction")))))
-     (org-sync-gtasks-agenda))
-   :output
-   "\\ TASK
-\\* TODO TITLE
-:PROPERTIES:
-:GTASKS-TASKLIST-ID: TASKLIST-ID
-:GTASKS-ID: TASK-ID
-:GTASKS-ETAG: ETAG
-:GTASKS-STATUS: needsAction
-:END:
-"))
+;; (ert-deftest org-sync-gtasks-agenda-test/new-tasks ()
+;;   "No new tasks in Google Tasks"
+;;   (org-sync-gtasks--test-with-org-buffer
+;;    :input
+;;    "* TASK
+;; "
+;;    :target
+;;    (with-mock
+;;      (stub org-sync-gtasks--default-tasklist-id =>
+;;            "TASKLIST-ID")
+;;      (stub org-sync-gtasks--make-tasklist-cache =>
+;;            (ht ("TASK-ID"
+;;                 (ht ("title"  "TITLE")
+;;                     ("id"     "TASK-ID")
+;;                     ("etag"   "ETAG")
+;;                     ("status" "needsAction")))))
+;;      (org-sync-gtasks-agenda))
+;;    :output
+;;    "\\ TASK
+;; \\* TODO TITLE
+;; :PROPERTIES:
+;; :GTASKS-TASKLIST-ID: TASKLIST-ID
+;; :GTASKS-ID: TASK-ID
+;; :GTASKS-ETAG: ETAG
+;; :GTASKS-STATUS: needsAction
+;; :END:
+;; "))
 
 ;; (ert-deftest org-sync-gtasks-agenda-test/completed-gtasks ()
 ;;   "No new tasks in Google Tasks"

@@ -560,6 +560,8 @@ DEADLINE: <2022-04-16 Sat>
 ;;    (with-mock
 ;;     (stub org-sync-gtasks--get-or-default-tasklist-id =>
 ;;           "TASKLIST-ID")
+;;     (stub org-map-entries =>
+;;           (message "This is a sutub"))
 ;;     (org-sync-gtasks-at-point))
 ;;    :output
 ;;    "\\* DONE Title

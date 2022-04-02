@@ -152,7 +152,7 @@ Hello World!" "status" "needsAction")) #s(hash-table test equal data ("kind" "ta
                       ("parent" "TEST-PARENT")
                       ("notes" "TEST-NOTES")
                       ("status" "needsAction")
-                      ("due" "12/31")
+                      ("due" "2022-04-01T13:24:25.000Z")
                       ("completed" "TEST-COMPLETED")
                       ("deleted" "false")
                       ("hidden" "false"))))
@@ -260,13 +260,120 @@ DEADLINE: <2022-04-01 Fri>
              "title" )
             "title of task"))))
 
-(ert-deftest org-sync-gtasks--equal-p-test ()
-  (let ((task (ht ("title" "title") ("status" "status")))
-        (gtask (ht ("title" "title") ("status" "status"))))
-    (should (org-sync-gtasks--equal-p task gtask)))
-  (let ((task (ht ("title" "title") ("status" "status")))
-        (gtask (ht ("title" "other title") ("status" "status"))))
-    (should (not (org-sync-gtasks--equal-p task gtask)))))
+
+(ert-deftest org-sync-gtasks--headline-modified-p-test/same-title ()
+    "The headline is same"
+  (org-sync-gtasks--test-with-org-buffer
+   :input
+   "* TODO TITLE
+:PROPERTIES:
+:GTASKS-STATUS: needsAction
+:END:
+"
+   :target
+   (should (eq (org-sync-gtasks--headline-modified-p
+                (ht ("title" "TITLE") ("status" "needsAction")))
+               nil))
+   :output
+   ""))
+
+(ert-deftest org-sync-gtasks--headline-modified-p-test/modified-title ()
+    "The headline is modified"
+  (org-sync-gtasks--test-with-org-buffer
+   :input
+   "* TODO NEW TITLE
+:PROPERTIES:
+:GTASKS-STATUS: needsAction
+:END:
+"
+   :target
+   (should (eq (org-sync-gtasks--headline-modified-p
+                (ht ("title" "TITLE") ("status" "needsAction")))
+               t))
+   :output
+   ""))
+
+(ert-deftest org-sync-gtasks--headline-modified-p-test/same-todo-status ()
+    "Is the headline modified?"
+  (org-sync-gtasks--test-with-org-buffer
+   :input
+   "* TODO TITLE
+"
+   :target
+   (should (eq (org-sync-gtasks--headline-modified-p
+                (ht ("title" "TITLE") ("status" "needsAction")))
+               nil)) ; modified
+   :output
+   ""))
+
+(ert-deftest org-sync-gtasks--headline-modified-p-test/not-same-todo-status ()
+    "Is the headline modified?"
+  (org-sync-gtasks--test-with-org-buffer
+   :input
+   "* TODO TITLE
+"
+   :target
+   (should (eq (org-sync-gtasks--headline-modified-p
+                (ht ("title" "TITLE") ("status" "completed")))
+               t))
+   :output
+   ""))
+
+(ert-deftest org-sync-gtasks--headline-modified-p-test/same-done-status ()
+    "Is the headline modified?"
+  (org-sync-gtasks--test-with-org-buffer
+   :input
+   "* DONE TITLE
+"
+   :target
+   (should (eq (org-sync-gtasks--headline-modified-p
+                (ht ("title" "TITLE") ("status" "completed")))
+               nil))
+   :output
+   ""))
+
+(ert-deftest org-sync-gtasks--headline-modified-p-test/not-same-done-status ()
+    "Is the headline modified?"
+  (org-sync-gtasks--test-with-org-buffer
+   :input
+   "* DONE TITLE
+"
+   :target
+   (should (eq (org-sync-gtasks--headline-modified-p
+                (ht ("title" "TITLE") ("status" "needsAction")))
+               t))
+   :output
+   ""))
+
+(ert-deftest org-sync-gtasks--headline-modified-p-test/same-deadline ()
+    "Is the headline modified?"
+  (org-sync-gtasks--test-with-org-buffer
+   :input
+   "* TODO TITLE
+DEADLINE: <2022-04-01>
+"
+   :target
+   (should (eq (org-sync-gtasks--headline-modified-p
+                (ht ("title" "TITLE") ("status" "needsAction")
+                    ("due" "2022-04-01T13:24:25.000Z")))
+               nil))
+   :output
+   ""))
+
+(ert-deftest org-sync-gtasks--headline-modified-p-test/not-same-deadline ()
+    "Is the headline modified?"
+  (org-sync-gtasks--test-with-org-buffer
+   :input
+   "* TODO TITLE
+DEADLINE: <2022-04-02>
+"
+   :target
+   (should (eq (org-sync-gtasks--headline-modified-p
+                (ht ("title" "TITLE") ("status" "needsAction")
+                    ("due" "2022-04-01T13:24:25.000Z")))
+               t))
+   :output
+   ""))
 
 (ert-deftest org-sync-gtasks-at-point-test/check-org-mode ()
   "Not in org-mode"
@@ -276,10 +383,7 @@ DEADLINE: <2022-04-01 Fri>
   "No title"
   (org-sync-gtasks--test-with-org-buffer
    :target
-   (with-mock
-     (stub org-sync-gtasks--get-or-default-tasklist-id =>
-           "TASKLIST-ID")
-     (org-sync-gtasks-at-point))
+   (should-error (org-sync-gtasks-at-point))
    :list
    ((:input
      ""
@@ -351,6 +455,7 @@ DEADLINE: <2022-04-01 Fri>
   (org-sync-gtasks--test-with-org-buffer
    :input
    "* TODO New Title
+DEADLINE: <2022-04-01>
 :PROPERTIES:
 :GTASKS-TASKLIST-ID: TASKLIST-ID
 :GTASKS-ID: TASK-ID
@@ -372,10 +477,12 @@ DEADLINE: <2022-04-01 Fri>
           (ht ("title"  "Title")
               ("id"     "TASK-ID")
               ("etag"   "ETAG")
-              ("status" "needsAction")))
+              ("status" "needsAction")
+              ("due"    "2022-04-01")))
     (org-sync-gtasks-at-point))
    :output
    "\\* TODO Title
+DEADLINE: <2022-04-01 Fri>
 :PROPERTIES:
 :GTASKS-TASKLIST-ID: TASKLIST-ID
 :GTASKS-ID: .*
@@ -384,11 +491,12 @@ DEADLINE: <2022-04-01 Fri>
 :END:
 "))
 
-(ert-deftest org-sync-gtasks-at-point-test/update ()
+(ert-deftest org-sync-gtasks-at-point-test/get ()
   "Update"
   (org-sync-gtasks--test-with-org-buffer
    :input
    "* TODO Title
+DEADLINE: <2022-04-01>
 :PROPERTIES:
 :GTASKS-TASKLIST-ID: TASKLIST-ID
 :GTASKS-ID: TASK-ID
@@ -405,10 +513,12 @@ DEADLINE: <2022-04-01 Fri>
           (ht ("title"  "Title")
               ("id"     "TASK-ID")
               ("etag"   "ETAG")
-              ("status" "needsAction")))
+              ("status" "needsAction")
+              ("due"    "2022-04-16T00:00:00.000Z")))
     (org-sync-gtasks-at-point))
    :output
    "\\* TODO Title
+DEADLINE: <2022-04-16 Sat>
 :PROPERTIES:
 :GTASKS-TASKLIST-ID: TASKLIST-ID
 :GTASKS-ID: .*

@@ -17,7 +17,14 @@
    (aref (ht-get (org-sync-gtasks--api-tasklists-list) "items") 0)
    "id"))
 
-(defun org-sync-gtasks--make-tasklist-cache (tasklist-id)
+(defun org-sync-gtasks--get-or-default-tasklist-id ()
+  "Get tasklist id. If it doesn't have GTASKLIST-ID, get it from GTasks."
+  (let ((gtasklist-id (org-entry-get nil "GTASKS-TASKLIST-ID"))) ; GTASKS-TASKLIST-ID
+    (if (eq gtasklist-id nil)
+        (setq gtasklist-id (org-sync-gtasks--default-tasklist-id)))
+    gtasklist-id))
+
+(defun org-sync-gtasks--make-tasklist-cache (tasklist-id) ; TODO: get? api?
   "Create a hash table for looking up tasklist or task items by the id."
   (let* ((table (ht-create))
          (tasks (org-sync-gtasks--api-tasks-list tasklist-id))
@@ -28,13 +35,6 @@
 	;; Set the task to the table.
         (ht-set! table task-id task)))
     table))
-
-(defun org-sync-gtasks--get-or-default-tasklist-id ()
-  "Get tasklist id. If it doesn't have GTASKLIST-ID, get it from GTasks."
-  (let ((gtasklist-id (org-entry-get nil "GTASKS-TASKLIST-ID"))) ; GTASKS-TASKLIST-ID
-    (if (eq gtasklist-id nil)
-        (setq gtasklist-id (org-sync-gtasks--default-tasklist-id)))
-    gtasklist-id))
 
 (defun org-sync-gtasks--update-todo-headline (tasklist-id gtask)
   "Update headline and its properties."
@@ -59,7 +59,8 @@
               (org-todo "DONE"))
              (t nil))))
         (if (ht-get gtask "due")
-            (org-entry-put nil "DEADLINE" (ht-get gtask "due")))
+            (org-entry-put nil "DEADLINE"
+                           (substring (ht-get gtask "due") 0 10)))
         (if (ht-get gtask "completed")
             (org-entry-put nil "GTASKS-COMPLETED" (ht-get gtask "completed")))
         (if (ht-get gtask "deleted")
@@ -75,22 +76,24 @@
   (org-edit-headline (ht-get gtask "title"))
   (org-sync-gtasks--update-todo-headline tasklist-id gtask))
 
-(defun org-sync-gtasks--make-task-from-headline ()
+(defun org-sync-gtasks--make-task-from-headline () ; TODO: headline-to-task ?
   "Make gtask as a hash table from the headline properties."
   (let ((task     (ht-create))
         (title    (org-entry-get nil "ITEM"))
         (deadline (org-entry-get nil "DEADLINE"))
         (id       (org-entry-get nil "GTASKS-ID"))
         (etag     (org-entry-get nil "GTASKS-ETAG"))
-        (status   (org-entry-get nil "GTASKS-STATUS"))
         (notes    (org-entry-get nil "GTASKS-NOTES")))
     (ht-set! task "title" title)
+    (if (org-entry-is-todo-p)
+        (ht-set! task "status" "needsAction")
+      (ht-set! task "status" "completed"))
     (if deadline
-        (ht-set! task "due" (format-time-string "%Y-%m-%dT%H:%M:00.000Z"
-                                                 (date-to-time deadline))))
+        (ht-set! task "due" (format-time-string
+                             "%Y-%m-%dT%H:%M:00.000Z"
+                             (org-time-string-to-time deadline))))
     (if id     (ht-set! task "id" id))
     (if etag   (ht-set! task "etag" etag))
-    (if status (ht-set! task "status" status))
     (if notes  (ht-set! task "notes" notes))
     task))
 
@@ -100,12 +103,28 @@
       (ht-get cache task-id)
     (org-sync-gtasks--api-tasks-get tasklist-id task-id)))
 
-(defun org-sync-gtasks--equal-p (task gtask)
-  (and
-   (equal (ht-get task "title") (ht-get gtask "title"))
-   (equal (ht-get task "status") (ht-get gtask "status")))
-  ;; TODO: Other properties.
-  )
+(defun org-sync-gtasks--headline-modified-p (gtask)
+  (not
+   ;; Are the headline and the Google Tasks item same?
+   (and
+    ;; Is the headline item same?
+    (equal (org-entry-get nil "ITEM") (ht-get gtask "title"))
+    ;; Is the status same?
+    (or
+     (and (org-entry-is-todo-p)
+          (equal (ht-get gtask "status") "needsAction"))
+     (and (org-entry-is-done-p)
+          (equal (ht-get gtask "status") "completed")))
+    ;; Is the DEADLINE same?
+    (or
+     (if-let ((deadline (org-entry-get nil "DEADLINE"))
+              (gtask-deadline (ht-get gtask "due")))
+         (equal (org-time-string-to-time deadline)
+                (org-time-string-to-time gtask-deadline)))
+     (and (eq (org-entry-get nil "DEADLINE") nil)
+          (eq (ht-get gtask "due") nil)))
+    ;; TODO: Check 'note' is same
+    )))
 
 ;;; Entry points
 ;;;###autoload
@@ -133,49 +152,45 @@ not same | ---      -> Get it from remote.
   ;; Check major-mode
   (if (not (eq major-mode 'org-mode))
       (error "Please use this command in org-mode"))
+  ;; Check the headline has ITEM
+  (if (not (org-entry-get nil "ITEM"))
+      (error "Please use this command at a non-empty Org header"))
+  ;; Check TASKLIST-ID
   (if (eq tasklist-id nil)
       (setq tasklist-id (org-sync-gtasks--get-or-default-tasklist-id))) ; API
+  ;; Update Org headline if needed.
   (let* ((task (org-sync-gtasks--make-task-from-headline))
          (task-id (ht-get task "id")))
-
-    ;; Update Org headline's properties.
     (org-sync-gtasks--update-todo-headline
      tasklist-id
      (cond
-      ;; If the headline has no title, do nothing.
-      ((eq (ht-get task "title") nil)
-       nil)
       ;; If the headline is DONE and its status is completed, do nothing.
-      ((and (equal (org-entry-get nil "TODO") "DONE")
-            (equal (ht-get task "status") "completed"))
+      ((and (org-entry-is-done-p)
+            (equal (org-entry-get nil "GTASKS-STATUS") "completed"))
        (message "GTasks: Completed %s" (ht-get task "title"))
        nil)
       ;; If the task doesn't have gtask-id, Insert a new task to GTasks.
-      ((eq task-id nil)
+      ((not task-id)
        (message "GTasks: Insert %s" (ht-get task "title"))
        (org-sync-gtasks--api-tasks-insert tasklist-id task))
       (t
        ;; If the task has its task-id, update the headline or GTasks if needed.
-       (let ((gtask (org-sync-gtasks--get-gtask-from-cache-or-api
-                     tasklist-id task-id cache)))
+       (let* ((gtask (org-sync-gtasks--get-gtask-from-cache-or-api
+                      tasklist-id task-id cache))
+              (same-etag (equal (ht-get task "etag") (ht-get gtask "etag"))))
          (cond
-          ((equal (ht-get task "etag") (ht-get gtask "etag"))
-           (cond
-            ((and (and (not (equal (org-entry-get nil "TODO") "DONE")) ;; TODO: Move them to org-sync-gtasks--equal-p
-                       (equal (ht-get task "status") "needsAction"))
-                  (org-sync-gtasks--equal-p task gtask))
-             ;; Nothing to update the headline.
-             (message "GTasks: Keep %s" (ht-get task "title"))
-             nil)
-            (t
-             ;; Update the GTasks.
-             (when (equal (org-entry-get nil "TODO") "DONE")
-               (ht-set! task "status" "completed"))
-             (message "GTasks: Patch %s" (ht-get task "title"))
-             (org-sync-gtasks--api-tasks-patch tasklist-id task-id task))))
+          ((and same-etag
+                (org-sync-gtasks--headline-modified-p gtask))
+           ;; Update the GTasks.
+           (message "GTasks: Patch %s" (ht-get task "title"))
+           (org-sync-gtasks--api-tasks-patch tasklist-id task-id task))
+          (same-etag
+           ;; Keep the headline.
+           (message "GTasks: Keep %s" (ht-get task "title"))
+           nil)
           (t
-           ;; Update the headline.
-           (message "GTasks: Update %s" (ht-get task "title"))
+           ;; Get the headline.
+           (message "GTasks: Get %s" (ht-get gtask "title"))
            gtask))))))))
 
 ;;;###autoload

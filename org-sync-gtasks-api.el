@@ -4,7 +4,7 @@
 (require 'ht)
 
 ;;; Google Tasks API related functions.
-(defcustom org-sync-gtasks--client-secret-json "~/.client_secret.json"
+(defcustom org-sync-gtasks--client-secret-json "~/.client_secret.json" ; TODO: --
   "The location to your client secret JSON file for GTasks."
   :type '(string)
   :group 'my)

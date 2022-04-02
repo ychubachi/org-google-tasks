@@ -39,7 +39,7 @@ REST is a plist.
                      list)))
       (push 'progn r))))
 
-(ert-deftest org-sync-gtasks--test-with-org-buffer-test()
+(ert-deftest org-sync-gtasks--test-with-org-buffer-test ()
   "Test org-sync-gtasks--test-with-org-buffer macro for development purpose."
   (with-mock
     (stub org-id-new => "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")
@@ -56,6 +56,18 @@ REST is a plist.
      :target
      (org-id-get-create) ;; this needs file related buffers.
      )))
+
+(ert-deftest org-sync-gtasks--test-with-org-buffer-test/error ()
+  "Test on error."
+  (org-sync-gtasks--test-with-org-buffer
+   :input
+   "* headline
+"
+   :target
+   (error "test")
+   :output
+   "\\* headline
+"))
 
 ;; Tests
 (ert-deftest org-sync-gtasks--default-tasklist-id-test ()
@@ -595,17 +607,11 @@ DEADLINE: <2022-04-16 Sat>
 :END:
 "))
 
-(ert-deftest org-sync-gtasks-agenda-test/no-new-tasks ()
+(ert-deftest org-sync-gtasks-agenda-test/new-tasks ()
   "No new tasks in Google Tasks"
   (org-sync-gtasks--test-with-org-buffer
    :input
-   "* Title
-:PROPERTIES:
-:GTASKS-TASKLIST-ID: TASKLIST-ID
-:GTASKS-ID: TASK-ID
-:GTASKS-ETAG: ETAG
-:GTASKS-STATUS: needsAction
-:END:
+   "* TASK
 "
    :target
    (with-mock
@@ -613,24 +619,14 @@ DEADLINE: <2022-04-16 Sat>
            "TASKLIST-ID")
      (stub org-sync-gtasks--make-tasklist-cache =>
            (ht ("TASK-ID"
-                (ht ("title"  "Title")
+                (ht ("title"  "TITLE")
                     ("id"     "TASK-ID")
                     ("etag"   "ETAG")
                     ("status" "needsAction")))))
-     (stub org-sync-gtasks-at-point => nil)
-     (stub org-sync-gtasks--get-gtask-from-cache-or-api =>
-          (ht ("title"  "Title")
-              ("id"     "TASK-ID")
-              ("etag"   "ETAG")
-              ("status" "needsAction")))
-     ;; (stub org-sync-gtasks--api-tasks-insert =>
-     ;;       (ht ("title" "Title")
-     ;;           ("id" "TASK-ID")
-     ;;           ("etag" "ETAG")
-     ;;           ("status" "needsAction")))
      (org-sync-gtasks-agenda))
    :output
-   "\\* Title
+   "\\ TASK
+\\* TODO TITLE
 :PROPERTIES:
 :GTASKS-TASKLIST-ID: TASKLIST-ID
 :GTASKS-ID: TASK-ID
@@ -639,32 +635,25 @@ DEADLINE: <2022-04-16 Sat>
 :END:
 "))
 
-;; (ert-deftest org-sync-gtasks-agenda-test/new-tasks ()
-;;   "New tasks in Google Tasks"
+;; (ert-deftest org-sync-gtasks-agenda-test/completed-gtasks ()
+;;   "No new tasks in Google Tasks"
 ;;   (org-sync-gtasks--test-with-org-buffer
 ;;    :input
-;;    "* Title
+;;    "* TASK
 ;; "
 ;;    :target
 ;;    (with-mock
-;;      (stub org-sync-gtasks--make-tasklist-cache =>
-;;           (ht ("id" "TASK-ID") ("title" "New GTasks task")))
 ;;      (stub org-sync-gtasks--default-tasklist-id =>
 ;;            "TASKLIST-ID")
-;;      ;; (stub org-sync-gtasks--api-tasks-insert =>
-;;      ;;       (ht ("title" "Title")
-;;      ;;           ("id" "TASK-ID")
-;;      ;;           ("etag" "ETAG")
-;;      ;;           ("status" "needsAction")))
+;;      (stub org-sync-gtasks--make-tasklist-cache =>
+;;            (ht ("TASK-ID"
+;;                 (ht ("title"  "TITLE")
+;;                     ("id"     "TASK-ID")
+;;                     ("etag"   "ETAG")
+;;                     ("status" "completed")))))
 ;;      (org-sync-gtasks-agenda))
 ;;    :output
-;;    "\\* TODO Title
-;; :PROPERTIES:
-;; :GTASKS-TASKLIST-ID: TASKLIST-ID
-;; :GTASKS-ID: TASK-ID
-;; :GTASKS-ETAG: ETAG
-;; :GTASKS-STATUS: needsAction
-;; :END:
-;; "))
+;;    "\\* TASK
+;; ")) ; TODO: this matches even if TASK has properties...
 
 ;;; org-sync-gtasks-test.el ends here

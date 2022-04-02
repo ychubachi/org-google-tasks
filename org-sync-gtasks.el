@@ -214,12 +214,12 @@ Deleted GTasks tasks are also needed to update to change stautus."
      'agenda)
     ;; Insert org headlines from rest of the cache.
     (dolist (gtasks-id (ht-keys cache))
-      (message "GTasks: New %s" (ht-get (ht-get cache gtasks-id) "title"))
-      (org-sync-gtasks--insert-todo-headline
-       tasklist-id
-       (ht-get cache gtasks-id))))
+      (when (not (equal (ht-get (ht-get cache gtasks-id) "status") "completed"))
+        (message "GTasks: New %s" (ht-get (ht-get cache gtasks-id) "title"))
+        (org-sync-gtasks--insert-todo-headline
+         tasklist-id
+         (ht-get cache gtasks-id)))))
   (message "GTasks: Done"))
 
 (provide 'org-sync-gtasks)
-
 ;;; org-sync-gtasks.el ends here

@@ -9,8 +9,6 @@
 (require 'org)
 (require 'ht)
 (require 'org-sync-gtasks-api)
-
-;;; Org headlines related functions.
 (defun org-sync-gtasks--default-tasklist-id ()
   "This gets the defult tasklist ID."
   (ht-get
@@ -19,22 +17,10 @@
 
 (defun org-sync-gtasks--get-or-default-tasklist-id ()
   "Get tasklist id. If it doesn't have GTASKLIST-ID, get it from GTasks."
-  (let ((gtasklist-id (org-entry-get nil "GTASKS-TASKLIST-ID"))) ; GTASKS-TASKLIST-ID
-    (if (eq gtasklist-id nil)
+  (let ((gtasklist-id (org-entry-get nil "GTASKS-TASKLIST-ID")))
+    (if (not gtasklist-id)
         (setq gtasklist-id (org-sync-gtasks--default-tasklist-id)))
     gtasklist-id))
-
-(defun org-sync-gtasks--make-tasklist-cache (tasklist-id) ; TODO: get? api?
-  "Create a hash table for looking up tasklist or task items by the id."
-  (let* ((table (ht-create))
-         (tasks (org-sync-gtasks--api-tasks-list tasklist-id))
-         (task-items (ht-get tasks "items")))
-    (dotimes (i (length task-items))
-      (let* ((task (aref task-items i))
-            (task-id (ht-get task "id")))
-	;; Set the task to the table.
-        (ht-set! table task-id task)))
-    table))
 
 (defun org-sync-gtasks--update-todo-headline (tasklist-id gtask)
   "Update headline and its properties."
@@ -76,7 +62,24 @@
   (org-edit-headline (ht-get gtask "title"))
   (org-sync-gtasks--update-todo-headline tasklist-id gtask))
 
-(defun org-sync-gtasks--make-task-from-headline () ; TODO: headline-to-task ?
+(defun org-sync-gtasks--make-tasklist-cache (tasklist-id)
+  "Create a hash table for looking up tasklist or task items by the id."
+  (let* ((table (ht-create))
+         (tasks (org-sync-gtasks--api-tasks-list tasklist-id))
+         (task-items (ht-get tasks "items")))
+    (dotimes (i (length task-items))
+      (let* ((task (aref task-items i))
+             (task-id (ht-get task "id")))
+	;; Set the task to the table.
+        (ht-set! table task-id task)))
+    table))
+
+(defun org-sync-gtasks--get-gtask-from-cache-or-api (tasklist-id task-id cache)
+  (if (and cache (ht-get cache task-id))
+      (ht-get cache task-id)
+    (org-sync-gtasks--api-tasks-get tasklist-id task-id)))
+
+(defun org-sync-gtasks--make-task-from-headline ()
   "Make gtask as a hash table from the headline properties."
   (let ((task     (ht-create))
         (title    (org-entry-get nil "ITEM"))
@@ -96,12 +99,6 @@
     (if etag   (ht-set! task "etag" etag))
     (if notes  (ht-set! task "notes" notes))
     task))
-
-;;; Utilities
-(defun org-sync-gtasks--get-gtask-from-cache-or-api (tasklist-id task-id cache)
-  (if (and cache (ht-get cache task-id))
-      (ht-get cache task-id)
-    (org-sync-gtasks--api-tasks-get tasklist-id task-id)))
 
 (defun org-sync-gtasks--headline-modified-p (gtask)
   (not
@@ -157,7 +154,7 @@ not same | ---      -> Get it from remote.
       (error "Please use this command at a non-empty Org header"))
   ;; Check TASKLIST-ID
   (if (eq tasklist-id nil)
-      (setq tasklist-id (org-sync-gtasks--get-or-default-tasklist-id))) ; API
+      (setq tasklist-id (org-sync-gtasks--get-or-default-tasklist-id)))
   ;; Update Org headline if needed.
   (let* ((task (org-sync-gtasks--make-task-from-headline))
          (task-id (ht-get task "id")))
@@ -176,22 +173,20 @@ not same | ---      -> Get it from remote.
       (t
        ;; If the task has its task-id, update the headline or GTasks if needed.
        (let* ((gtask (org-sync-gtasks--get-gtask-from-cache-or-api
-                      tasklist-id task-id cache))
-              (same-etag (equal (ht-get task "etag") (ht-get gtask "etag"))))
+                      tasklist-id task-id cache)))
          (cond
-          ((and same-etag
-                (org-sync-gtasks--headline-modified-p gtask))
-           ;; Update the GTasks.
+          ;; If the etag is changed, get the task from Google Tasks.
+          ((not (equal (ht-get task "etag") (ht-get gtask "etag")))
+           (message "GTasks: Get %s" (ht-get gtask "title"))
+           gtask)
+          ;; If the headline is modified, patch the task in Google Tasks.
+          ((org-sync-gtasks--headline-modified-p gtask)
            (message "GTasks: Patch %s" (ht-get task "title"))
            (org-sync-gtasks--api-tasks-patch tasklist-id task-id task))
-          (same-etag
-           ;; Keep the headline.
-           (message "GTasks: Keep %s" (ht-get task "title"))
-           nil)
+          ;; Otherwise, do nothing.
           (t
-           ;; Get the headline.
-           (message "GTasks: Get %s" (ht-get gtask "title"))
-           gtask))))))))
+           (message "GTasks: Keep %s" (ht-get task "title"))
+           nil))))))))
 
 ;;;###autoload
 (defun org-sync-gtasks-agenda ()

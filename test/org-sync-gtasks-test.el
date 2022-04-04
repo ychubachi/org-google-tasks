@@ -10,33 +10,35 @@
 REST is a plist.
 :input input org text
 :output output org text
- :target target body to test."
+ :target target body to test.
+
+Ref: https://github.com/bzg/org-mode/blob/6d73cd34a07796c33f9435bfc8c9a19e67656c7a/testing/org-test.el#L206"
   (let ((target (plist-get rest :target))
         (list   (plist-get rest :list)))
     ;; If we have only one example pair, make them to list.
     (if (eq list nil)
-      (let ((input  (plist-get rest :input))
-            (output (plist-get rest :output)))
-        (setq list (list (list :input input :output output)))))
+        (let ((input  (plist-get rest :input))
+              (output (plist-get rest :output)))
+          (setq list (list (list :input input :output output)))))
     ;; Iterate each example pair list.
     (let ((r (mapcar (lambda (x)
-                      (let ((input  (plist-get x :input))
-                            (output (plist-get x :output)))
-                        `(let* ((org ,input)
-	                        (result))
-                           (with-current-buffer
-                               (find-file-noselect (make-temp-file "org-"))
-	                     (org-mode)
-	                     (insert org)
-	                     ;; target
-                             (unwind-protect
-                                 ,target
-	                       ;; test
-	                       (setq result-string
-                                     (substring-no-properties (buffer-string)))
-	                       (set-buffer-modified-p nil)
-	                       (kill-buffer (current-buffer))))
-                           (should (string-match ,output result-string)))))
+                       (let ((input  (plist-get x :input))
+                             (output (plist-get x :output)))
+                         `(let* ((org ,input)
+	                         (result))
+                            (with-current-buffer
+                                (find-file-noselect (make-temp-file "org-"))
+	                      (org-mode)
+	                      (insert org)
+	                      ;; target
+                              (unwind-protect
+                                  ,target
+	                        ;; test
+	                        (setq result-string
+                                      (substring-no-properties (buffer-string)))
+	                        (set-buffer-modified-p nil)
+	                        (kill-buffer (current-buffer))))
+                            (should (string-match ,output result-string)))))
                      list)))
       (push 'progn r))))
 
@@ -85,7 +87,7 @@ REST is a plist.
 			("kind" "tasks#tasks" "etag" "\"LTE1Nzc5OTMyNDA\"" "items" [#s(hash-table size 9 test equal rehash-size 1.5 rehash-threshold 0.8125 data ("kind" "tasks#task" "id" "YWlqV0hsRV9lYVlQdkx5MQ" "etag" "\"LTIxMDQ5NTgyODI\"" "title" "Task2 with note" "updated" "2022-03-13T09:08:03.000Z" "selfLink" "https://www.googleapis.com/tasks/v1/lists/MDc1MzA1NTQ1OTYxODU5MTEwMTg6MDow/tasks/YWlqV0hsRV9lYVlQdkx5MQ" "position" "00000000000000000001" "notes" "This is note string.
 Hello World!" "status" "needsAction")) #s(hash-table test equal data ("kind" "tasks#task" "id" "dlAzdXRlWDh2Z0dsck4xcQ" "etag" "\"MjA3MjIxMDY4Nw\"" "title" "Task 7 as sub-task" "updated" "2022-03-12T00:24:45.000Z" "selfLink" "https://www.googleapis.com/tasks/v1/lists/MDc1MzA1NTQ1OTYxODU5MTEwMTg6MDow/tasks/dlAzdXRlWDh2Z0dsck4xcQ" "parent" "aEQ1TjhNOGRiS3p6VmR4dw" "position" "00000000000000000000" "status" "needsAction")) #s(hash-table test equal data ("kind" "tasks#task" "id" "aEQ1TjhNOGRiS3p6VmR4dw" "etag" "\"MjA3MjE3NDc0OA\"" "title" "Task6 as parent" "updated" "2022-03-12T00:24:09.000Z" "selfLink" "https://www.googleapis.com/tasks/v1/lists/MDc1MzA1NTQ1OTYxODU5MTEwMTg6MDow/tasks/aEQ1TjhNOGRiS3p6VmR4dw" "position" "00000000000000000005" "status" "needsAction")) #s(hash-table test equal data ("kind" "tasks#task" "id" "Y1hxLXB0ZHJZb0x0Z3I0Mw" "etag" "\"MjA3MjE1ODc0MQ\"" "title" "Task5 with date time" "updated" "2022-03-12T00:23:53.000Z" "selfLink" "https://www.googleapis.com/tasks/v1/lists/MDc1MzA1NTQ1OTYxODU5MTEwMTg6MDow/tasks/Y1hxLXB0ZHJZb0x0Z3I0Mw" "position" "00000000000000000004" "status" "needsAction" "due" "2022-03-15T00:00:00.000Z")) #s(hash-table test equal data ("kind" "tasks#task" "id" "aUhGRlpRMXhqbmZrN1JsQQ" "etag" "\"MjA3MjE0NDc4NQ\"" "title" "Task4 with date (repeat)" "updated" "2022-03-12T00:23:38.000Z" "selfLink" "https://www.googleapis.com/tasks/v1/lists/MDc1MzA1NTQ1OTYxODU5MTEwMTg6MDow/tasks/aUhGRlpRMXhqbmZrN1JsQQ" "position" "00000000000000000003" "status" "needsAction" "due" "2022-03-15T00:00:00.000Z"))])))
     (let* ((table (org-sync-gtasks--make-tasklist-cache "TASKLIST-ID"))
-          (result (ht-keys table)))
+           (result (ht-keys table)))
       (should (equal
 	       (format "%s" result)
                "(aUhGRlpRMXhqbmZrN1JsQQ Y1hxLXB0ZHJZb0x0Z3I0Mw aEQ1TjhNOGRiS3p6VmR4dw dlAzdXRlWDh2Z0dsck4xcQ YWlqV0hsRV9lYVlQdkx5MQ)"
@@ -255,27 +257,27 @@ DEADLINE: <2022-04-01 Fri>
 (ert-deftest org-sync-gtasks--get-gtask-from-cache-or-api ()
   ;; Case 1
   (with-mock
-   (stub org-sync-gtasks--api-tasks-get =>
-         (ht ("title" "title of task")))
-   (should (equal
-            (ht-get
-             (org-sync-gtasks--get-gtask-from-cache-or-api
-              "tasklist-id" "task-id" nil)
-             "title" )
-            "title of task")))
+    (stub org-sync-gtasks--api-tasks-get =>
+          (ht ("title" "title of task")))
+    (should (equal
+             (ht-get
+              (org-sync-gtasks--get-gtask-from-cache-or-api
+               "tasklist-id" "task-id" nil)
+              "title" )
+             "title of task")))
   ;; Case 2
   (let ((cache (ht ("task-id"
                     (ht ("title" "title of task"))))))
     (should (equal
-            (ht-get
-             (org-sync-gtasks--get-gtask-from-cache-or-api
-              "tasklist-id" "task-id" cache)
-             "title" )
-            "title of task"))))
+             (ht-get
+              (org-sync-gtasks--get-gtask-from-cache-or-api
+               "tasklist-id" "task-id" cache)
+              "title" )
+             "title of task"))))
 
 
 (ert-deftest org-sync-gtasks--headline-modified-p-test/same-title ()
-    "The headline is same"
+  "The headline is same"
   (org-sync-gtasks--test-with-org-buffer
    :input
    "* TODO TITLE
@@ -291,7 +293,7 @@ DEADLINE: <2022-04-01 Fri>
    ""))
 
 (ert-deftest org-sync-gtasks--headline-modified-p-test/modified-title ()
-    "The headline is modified"
+  "The headline is modified"
   (org-sync-gtasks--test-with-org-buffer
    :input
    "* TODO NEW TITLE
@@ -307,7 +309,7 @@ DEADLINE: <2022-04-01 Fri>
    ""))
 
 (ert-deftest org-sync-gtasks--headline-modified-p-test/same-todo-status ()
-    "Is the headline modified?"
+  "Is the headline modified?"
   (org-sync-gtasks--test-with-org-buffer
    :input
    "* TODO TITLE
@@ -320,7 +322,7 @@ DEADLINE: <2022-04-01 Fri>
    ""))
 
 (ert-deftest org-sync-gtasks--headline-modified-p-test/not-same-todo-status ()
-    "Is the headline modified?"
+  "Is the headline modified?"
   (org-sync-gtasks--test-with-org-buffer
    :input
    "* TODO TITLE
@@ -333,7 +335,7 @@ DEADLINE: <2022-04-01 Fri>
    ""))
 
 (ert-deftest org-sync-gtasks--headline-modified-p-test/same-done-status ()
-    "Is the headline modified?"
+  "Is the headline modified?"
   (org-sync-gtasks--test-with-org-buffer
    :input
    "* DONE TITLE
@@ -346,7 +348,7 @@ DEADLINE: <2022-04-01 Fri>
    ""))
 
 (ert-deftest org-sync-gtasks--headline-modified-p-test/not-same-done-status ()
-    "Is the headline modified?"
+  "Is the headline modified?"
   (org-sync-gtasks--test-with-org-buffer
    :input
    "* DONE TITLE
@@ -359,7 +361,7 @@ DEADLINE: <2022-04-01 Fri>
    ""))
 
 (ert-deftest org-sync-gtasks--headline-modified-p-test/same-deadline ()
-    "Is the headline modified?"
+  "Is the headline modified?"
   (org-sync-gtasks--test-with-org-buffer
    :input
    "* TODO TITLE
@@ -374,7 +376,7 @@ DEADLINE: <2022-04-01>
    ""))
 
 (ert-deftest org-sync-gtasks--headline-modified-p-test/not-same-deadline ()
-    "Is the headline modified?"
+  "Is the headline modified?"
   (org-sync-gtasks--test-with-org-buffer
    :input
    "* TODO TITLE
@@ -412,14 +414,14 @@ DEADLINE: <2022-04-02>
 "
    :target
    (with-mock
-    (stub org-sync-gtasks--get-or-default-tasklist-id =>
-          "TASKLIST-ID")
-    (stub org-sync-gtasks--api-tasks-insert =>
-          (ht ("title" "Title")
-              ("id" "TASK-ID")
-              ("etag" "ETAG")
-              ("status" "needsAction")))
-    (org-sync-gtasks-at-point))
+     (stub org-sync-gtasks--get-or-default-tasklist-id =>
+           "TASKLIST-ID")
+     (stub org-sync-gtasks--api-tasks-insert =>
+           (ht ("title" "Title")
+               ("id" "TASK-ID")
+               ("etag" "ETAG")
+               ("status" "needsAction")))
+     (org-sync-gtasks-at-point))
    :output
    "\\* TODO Title
 :PROPERTIES:
@@ -444,15 +446,15 @@ DEADLINE: <2022-04-02>
 "
    :target
    (with-mock
-    (stub org-sync-gtasks--get-or-default-tasklist-id =>
-          "TASKLIST-ID")
-    ;; (stub org-sync-gtasks--default-tasklist-id => "HOGEE")
-    (stub org-sync-gtasks--get-gtask-from-cache-or-api =>
-          (ht ("title"  "Title")
-              ("id"     "TASK-ID")
-              ("etag"   "ETAG")
-              ("status" "needsAction")))
-    (org-sync-gtasks-at-point))
+     (stub org-sync-gtasks--get-or-default-tasklist-id =>
+           "TASKLIST-ID")
+     ;; (stub org-sync-gtasks--default-tasklist-id => "HOGEE")
+     (stub org-sync-gtasks--get-gtask-from-cache-or-api =>
+           (ht ("title"  "Title")
+               ("id"     "TASK-ID")
+               ("etag"   "ETAG")
+               ("status" "needsAction")))
+     (org-sync-gtasks-at-point))
    :output
    "\\* TODO Title
 :PROPERTIES:
@@ -478,21 +480,21 @@ DEADLINE: <2022-04-01>
 "
    :target
    (with-mock
-    (stub org-sync-gtasks--get-or-default-tasklist-id =>
-          "TASKLIST-ID")
-    ;; (stub org-sync-gtasks--default-tasklist-id => "HOGEE")
-    (stub org-sync-gtasks--get-gtask-from-cache-or-api =>
-          (ht ("title"  "Title")
-              ("id"     "TASK-ID")
-              ("etag"   "ETAG")
-              ("status" "needsAction")))
-    (stub org-sync-gtasks--api-tasks-patch =>
-          (ht ("title"  "Title")
-              ("id"     "TASK-ID")
-              ("etag"   "ETAG")
-              ("status" "needsAction")
-              ("due"    "2022-04-01")))
-    (org-sync-gtasks-at-point))
+     (stub org-sync-gtasks--get-or-default-tasklist-id =>
+           "TASKLIST-ID")
+     ;; (stub org-sync-gtasks--default-tasklist-id => "HOGEE")
+     (stub org-sync-gtasks--get-gtask-from-cache-or-api =>
+           (ht ("title"  "Title")
+               ("id"     "TASK-ID")
+               ("etag"   "ETAG")
+               ("status" "needsAction")))
+     (stub org-sync-gtasks--api-tasks-patch =>
+           (ht ("title"  "Title")
+               ("id"     "TASK-ID")
+               ("etag"   "ETAG")
+               ("status" "needsAction")
+               ("due"    "2022-04-01")))
+     (org-sync-gtasks-at-point))
    :output
    "\\* TODO Title
 DEADLINE: <2022-04-01 Fri>
@@ -519,16 +521,16 @@ DEADLINE: <2022-04-01>
 "
    :target
    (with-mock
-    (stub org-sync-gtasks--get-or-default-tasklist-id =>
-          "TASKLIST-ID")
-    ;; (stub org-sync-gtasks--default-tasklist-id => "HOGEE")
-    (stub org-sync-gtasks--get-gtask-from-cache-or-api =>
-          (ht ("title"  "Title")
-              ("id"     "TASK-ID")
-              ("etag"   "ETAG")
-              ("status" "needsAction")
-              ("due"    "2022-04-16T00:00:00.000Z")))
-    (org-sync-gtasks-at-point))
+     (stub org-sync-gtasks--get-or-default-tasklist-id =>
+           "TASKLIST-ID")
+     ;; (stub org-sync-gtasks--default-tasklist-id => "HOGEE")
+     (stub org-sync-gtasks--get-gtask-from-cache-or-api =>
+           (ht ("title"  "Title")
+               ("id"     "TASK-ID")
+               ("etag"   "ETAG")
+               ("status" "needsAction")
+               ("due"    "2022-04-16T00:00:00.000Z")))
+     (org-sync-gtasks-at-point))
    :output
    "\\* TODO Title
 DEADLINE: <2022-04-16 Sat>
@@ -540,123 +542,150 @@ DEADLINE: <2022-04-16 Sat>
 :END:
 "))
 
-;; (ert-deftest org-sync-gtasks-agenda-test/check-org-mode ()
-;;   "Not in org-mode"
-;;   (should-error (org-sync-gtasks-agenda)))
+(ert-deftest org-sync-gtasks-agenda-test/stub-org-agenda-files ()
+  "Test with making org-agenda-files stub.
 
-;; (ert-deftest org-sync-gtasks-agenda-test/done-and-completed ()
-;;   "Do nothing."
-;;   (org-sync-gtasks--test-with-org-buffer
-;;    :input
-;;    "* DONE Title
-;; :PROPERTIES:
-;; :GTASKS-TASKLIST-ID: TASKLIST-ID
-;; :GTASKS-ID: TASK-ID
-;; :GTASKS-ETAG: ETAG
-;; :GTASKS-STATUS: completed
-;; :END:
-;; "
-;;    :target
-;;    (with-mock
-;;     (stub org-sync-gtasks--get-or-default-tasklist-id =>
-;;           "TASKLIST-ID")
-;;     (stub org-map-entries =>
-;;           (message "This is a sutub"))
-;;     (org-sync-gtasks-at-point))
-;;    :output
-;;    "\\* DONE Title
-;; :PROPERTIES:
-;; :GTASKS-TASKLIST-ID: TASKLIST-ID
-;; :GTASKS-ID: TASK-ID
-;; :GTASKS-ETAG: ETAG
-;; :GTASKS-STATUS: completed
-;; :END:
-;; "))
+Ref: https://github.com/bzg/org-mode/blob/6d73cd34a07796c33f9435bfc8c9a19e67656c7a/lisp/org.el#L12809"
+  (org-sync-gtasks--test-with-org-buffer
+   :input
+   "* TODO 1
+* 2
+** TODO 3
+"
+   :target
+   (with-mock
+     (stub org-agenda-files => (list (buffer-file-name)))
+     (org-map-entries
+      (lambda () (org-todo "DONE"))
+      "+TODO={.+}"
+      'agenda))
+   :output
+   "\\* DONE 1
+\\* 2
+\\*\\* DONE 3
+"))
 
-;; (ert-deftest org-sync-gtasks-agenda-test/done-and-needsAction ()
-;;   "If the headline is DONE but its status is needsAction, need to patch."
-;;   (org-sync-gtasks--test-with-org-buffer
-;;    :input
-;;    "* DONE Title
-;; :PROPERTIES:
-;; :GTASKS-TASKLIST-ID: TASKLIST-ID
-;; :GTASKS-ID: TASK-ID
-;; :GTASKS-ETAG: ETAG
-;; :GTASKS-STATUS: needsAction
-;; :END:
-;; "
-;;    :target
-;;    (with-mock
-;;     (stub org-sync-gtasks--get-or-default-tasklist-id =>
-;;           "TASKLIST-ID")
-;;     (stub org-sync-gtasks--get-gtask-from-cache-or-api =>
-;;           (ht ("title"  "Title")
-;;               ("id"     "TASK-ID")
-;;               ("etag"   "ETAG")
-;;               ("status" "needsAction")))
-;;      (stub org-sync-gtasks--api-tasks-patch =>
-;;            (ht ("title" "Title")
-;;                ("id" "TASK-ID")
-;;                ("etag" "ETAG")
-;;                ("status" "completed")))
-;;      (org-sync-gtasks-at-point))
-;;    :output
-;;    "\\* DONE Title
-;; :PROPERTIES:
-;; :GTASKS-TASKLIST-ID: TASKLIST-ID
-;; :GTASKS-ID: TASK-ID
-;; :GTASKS-ETAG: ETAG
-;; :GTASKS-STATUS: completed
-;; :END:
-;; "))
+(ert-deftest org-sync-gtasks-agenda-test/check-org-mode ()
+  "Not in org-mode"
+  (should-error (org-sync-gtasks-agenda)))
 
-;; (ert-deftest org-sync-gtasks-agenda-test/new-tasks ()
-;;   "No new tasks in Google Tasks"
-;;   (org-sync-gtasks--test-with-org-buffer
-;;    :input
-;;    "* TASK
-;; "
-;;    :target
-;;    (with-mock
-;;      (stub org-sync-gtasks--default-tasklist-id =>
-;;            "TASKLIST-ID")
-;;      (stub org-sync-gtasks--make-tasklist-cache =>
-;;            (ht ("TASK-ID"
-;;                 (ht ("title"  "TITLE")
-;;                     ("id"     "TASK-ID")
-;;                     ("etag"   "ETAG")
-;;                     ("status" "needsAction")))))
-;;      (org-sync-gtasks-agenda))
-;;    :output
-;;    "\\ TASK
-;; \\* TODO TITLE
-;; :PROPERTIES:
-;; :GTASKS-TASKLIST-ID: TASKLIST-ID
-;; :GTASKS-ID: TASK-ID
-;; :GTASKS-ETAG: ETAG
-;; :GTASKS-STATUS: needsAction
-;; :END:
-;; "))
+(ert-deftest org-sync-gtasks-agenda-test/done-and-completed ()
+  "Do nothing."
+  (org-sync-gtasks--test-with-org-buffer
+   :input
+   "* DONE Title
+:PROPERTIES:
+:GTASKS-TASKLIST-ID: TASKLIST-ID
+:GTASKS-ID: TASK-ID
+:GTASKS-ETAG: ETAG
+:GTASKS-STATUS: completed
+:END:
+"
+   :target
+   (with-mock
+     (stub org-agenda-files => (list (buffer-file-name)))
+     (stub org-sync-gtasks--get-or-default-tasklist-id =>
+           "TASKLIST-ID")
+     (stub org-map-entries =>
+           (message "This is a sutub"))
+     (org-sync-gtasks-at-point))
+   :output
+   "\\* DONE Title
+:PROPERTIES:
+:GTASKS-TASKLIST-ID: TASKLIST-ID
+:GTASKS-ID: TASK-ID
+:GTASKS-ETAG: ETAG
+:GTASKS-STATUS: completed
+:END:
+"))
 
-;; (ert-deftest org-sync-gtasks-agenda-test/completed-gtasks ()
-;;   "No new tasks in Google Tasks"
-;;   (org-sync-gtasks--test-with-org-buffer
-;;    :input
-;;    "* TASK
-;; "
-;;    :target
-;;    (with-mock
-;;      (stub org-sync-gtasks--default-tasklist-id =>
-;;            "TASKLIST-ID")
-;;      (stub org-sync-gtasks--make-tasklist-cache =>
-;;            (ht ("TASK-ID"
-;;                 (ht ("title"  "TITLE")
-;;                     ("id"     "TASK-ID")
-;;                     ("etag"   "ETAG")
-;;                     ("status" "completed")))))
-;;      (org-sync-gtasks-agenda))
-;;    :output
-;;    "\\* TASK
-;; ")) ; TODO: this matches even if TASK has properties...
+(ert-deftest org-sync-gtasks-agenda-test/done-and-needsAction ()
+  "If the headline is DONE but its status is needsAction, need to patch."
+  (org-sync-gtasks--test-with-org-buffer
+   :input
+   "* DONE Title
+:PROPERTIES:
+:GTASKS-TASKLIST-ID: TASKLIST-ID
+:GTASKS-ID: TASK-ID
+:GTASKS-ETAG: ETAG
+:GTASKS-STATUS: needsAction
+:END:
+"
+   :target
+   (with-mock
+     (stub org-agenda-files => (list (buffer-file-name)))
+     (stub org-sync-gtasks--get-or-default-tasklist-id =>
+           "TASKLIST-ID")
+     (stub org-sync-gtasks--get-gtask-from-cache-or-api =>
+           (ht ("title"  "Title")
+               ("id"     "TASK-ID")
+               ("etag"   "ETAG")
+               ("status" "needsAction")))
+     (stub org-sync-gtasks--api-tasks-patch =>
+           (ht ("title" "Title")
+               ("id" "TASK-ID")
+               ("etag" "ETAG")
+               ("status" "completed")))
+     (org-sync-gtasks-at-point))
+   :output
+   "\\* DONE Title
+:PROPERTIES:
+:GTASKS-TASKLIST-ID: TASKLIST-ID
+:GTASKS-ID: TASK-ID
+:GTASKS-ETAG: ETAG
+:GTASKS-STATUS: completed
+:END:
+"))
+
+(ert-deftest org-sync-gtasks-agenda-test/new-tasks ()
+  "No new tasks in Google Tasks"
+  (org-sync-gtasks--test-with-org-buffer
+   :input
+   "* TASK
+"
+   :target
+   (with-mock
+     (stub org-agenda-files => (list (buffer-file-name)))
+     (stub org-sync-gtasks--default-tasklist-id =>
+           "TASKLIST-ID")
+     (stub org-sync-gtasks--make-tasklist-cache =>
+           (ht ("TASK-ID"
+                (ht ("title"  "TITLE")
+                    ("id"     "TASK-ID")
+                    ("etag"   "ETAG")
+                    ("status" "needsAction")))))
+     (org-sync-gtasks-agenda))
+   :output
+   "\\ TASK
+\\* TODO TITLE
+:PROPERTIES:
+:GTASKS-TASKLIST-ID: TASKLIST-ID
+:GTASKS-ID: TASK-ID
+:GTASKS-ETAG: ETAG
+:GTASKS-STATUS: needsAction
+:END:
+"))
+
+(ert-deftest org-sync-gtasks-agenda-test/completed-gtasks ()
+  "No new tasks in Google Tasks"
+  (org-sync-gtasks--test-with-org-buffer
+   :input
+   "* TASK
+"
+   :target
+   (with-mock
+     (stub org-agenda-files => (list (buffer-file-name)))
+     (stub org-sync-gtasks--default-tasklist-id =>
+           "TASKLIST-ID")
+     (stub org-sync-gtasks--make-tasklist-cache =>
+           (ht ("TASK-ID"
+                (ht ("title"  "TITLE")
+                    ("id"     "TASK-ID")
+                    ("etag"   "ETAG")
+                    ("status" "completed")))))
+     (org-sync-gtasks-agenda))
+   :output
+   "\\* TASK
+")) ; TODO: this matches even if TASK has properties...
 
 ;;; org-sync-gtasks-test.el ends here

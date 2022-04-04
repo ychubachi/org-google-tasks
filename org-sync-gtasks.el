@@ -206,10 +206,9 @@ Deleted GTasks tasks are also needed to update to change stautus."
     ;; Update todo headlines with valid GTASKS-ID.
     (org-map-entries
      (lambda ()
-       (let ((gtasks-id (org-entry-get nil "GTASKS-ID")))
-         (when gtasks-id
-           (org-sync-gtasks-at-point tasklist-id cache)
-           (ht-remove! cache gtasks-id)))) ; Remove this todo.
+       (when-let ((gtasks-id (org-entry-get nil "GTASKS-ID")))
+         (org-sync-gtasks-at-point tasklist-id cache)
+         (ht-remove! cache gtasks-id))) ; Remove this todo.
      "+TODO={.+}"
      'agenda)
     ;; Insert org headlines from rest of the cache.

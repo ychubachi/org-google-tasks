@@ -203,13 +203,12 @@ Deleted GTasks tasks are also needed to update to change stautus."
   ;; Make a list of GTASKS-ID by looking up all org TODO headlines in agenda.
   (let* ((tasklist-id (org-sync-gtasks--default-tasklist-id))
          (cache       (org-sync-gtasks--make-tasklist-cache tasklist-id)))
+    ;; Update todo headlines with valid GTASKS-ID.
     (org-map-entries
      (lambda ()
-       ;; Update todo headlines with valid GTASKS-ID.
-       (let ((gtasks-id (org-entry-get nil "GTASKS-ID")))
-         (when gtasks-id
-           (org-sync-gtasks-at-point tasklist-id cache)
-           (ht-remove! cache gtasks-id)))) ; Remove this todo.
+       (when-let ((gtasks-id (org-entry-get nil "GTASKS-ID")))
+         (org-sync-gtasks-at-point tasklist-id cache)
+         (ht-remove! cache gtasks-id))) ; Remove this todo.
      "+TODO={.+}"
      'agenda)
     ;; Insert org headlines from rest of the cache.

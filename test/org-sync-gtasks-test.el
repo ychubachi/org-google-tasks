@@ -542,6 +542,72 @@ DEADLINE: <2022-04-16 Sat>
 :END:
 "))
 
+(ert-deftest org-sync-gtasks-at-point-test/done-and-completed ()
+  "Do nothing."
+  (org-sync-gtasks--test-with-org-buffer
+   :input
+   "* DONE Title
+:PROPERTIES:
+:GTASKS-TASKLIST-ID: TASKLIST-ID
+:GTASKS-ID: TASK-ID
+:GTASKS-ETAG: ETAG
+:GTASKS-STATUS: completed
+:END:
+"
+   :target
+   (with-mock
+     (stub org-sync-gtasks--get-or-default-tasklist-id =>
+           "TASKLIST-ID")
+     (stub org-map-entries =>
+           (message "This is a sutub"))
+     (org-sync-gtasks-at-point))
+   :output
+   "\\* DONE Title
+:PROPERTIES:
+:GTASKS-TASKLIST-ID: TASKLIST-ID
+:GTASKS-ID: TASK-ID
+:GTASKS-ETAG: ETAG
+:GTASKS-STATUS: completed
+:END:
+"))
+
+(ert-deftest org-sync-gtasks-at-point-test/done-and-needsAction ()
+  "If the headline is DONE but its status is needsAction, need to patch."
+  (org-sync-gtasks--test-with-org-buffer
+   :input
+   "* DONE Title
+:PROPERTIES:
+:GTASKS-TASKLIST-ID: TASKLIST-ID
+:GTASKS-ID: TASK-ID
+:GTASKS-ETAG: ETAG
+:GTASKS-STATUS: needsAction
+:END:
+"
+   :target
+   (with-mock
+     (stub org-sync-gtasks--get-or-default-tasklist-id =>
+           "TASKLIST-ID")
+     (stub org-sync-gtasks--get-gtask-from-cache-or-api =>
+           (ht ("title"  "Title")
+               ("id"     "TASK-ID")
+               ("etag"   "ETAG")
+               ("status" "needsAction")))
+     (stub org-sync-gtasks--api-tasks-patch =>
+           (ht ("title" "Title")
+               ("id" "TASK-ID")
+               ("etag" "ETAG")
+               ("status" "completed")))
+     (org-sync-gtasks-at-point))
+   :output
+   "\\* DONE Title
+:PROPERTIES:
+:GTASKS-TASKLIST-ID: TASKLIST-ID
+:GTASKS-ID: TASK-ID
+:GTASKS-ETAG: ETAG
+:GTASKS-STATUS: completed
+:END:
+"))
+
 (ert-deftest org-sync-gtasks-agenda-test/stub-org-agenda-files ()
   "Test with making org-agenda-files stub.
 
@@ -569,41 +635,11 @@ Ref: https://github.com/bzg/org-mode/blob/6d73cd34a07796c33f9435bfc8c9a19e67656c
   "Not in org-mode"
   (should-error (org-sync-gtasks-agenda)))
 
-(ert-deftest org-sync-gtasks-agenda-test/done-and-completed ()
-  "Do nothing."
+(ert-deftest org-sync-gtasks-agenda-test/call-sync-at-point ()
+  "No new tasks in Google Tasks"
   (org-sync-gtasks--test-with-org-buffer
    :input
-   "* DONE Title
-:PROPERTIES:
-:GTASKS-TASKLIST-ID: TASKLIST-ID
-:GTASKS-ID: TASK-ID
-:GTASKS-ETAG: ETAG
-:GTASKS-STATUS: completed
-:END:
-"
-   :target
-   (with-mock
-     (stub org-agenda-files => (list (buffer-file-name)))
-     (stub org-sync-gtasks--get-or-default-tasklist-id =>
-           "TASKLIST-ID")
-     (stub org-map-entries =>
-           (message "This is a sutub"))
-     (org-sync-gtasks-at-point))
-   :output
-   "\\* DONE Title
-:PROPERTIES:
-:GTASKS-TASKLIST-ID: TASKLIST-ID
-:GTASKS-ID: TASK-ID
-:GTASKS-ETAG: ETAG
-:GTASKS-STATUS: completed
-:END:
-"))
-
-(ert-deftest org-sync-gtasks-agenda-test/done-and-needsAction ()
-  "If the headline is DONE but its status is needsAction, need to patch."
-  (org-sync-gtasks--test-with-org-buffer
-   :input
-   "* DONE Title
+   "* TODO TASK
 :PROPERTIES:
 :GTASKS-TASKLIST-ID: TASKLIST-ID
 :GTASKS-ID: TASK-ID
@@ -614,26 +650,19 @@ Ref: https://github.com/bzg/org-mode/blob/6d73cd34a07796c33f9435bfc8c9a19e67656c
    :target
    (with-mock
      (stub org-agenda-files => (list (buffer-file-name)))
-     (stub org-sync-gtasks--get-or-default-tasklist-id =>
+     (stub org-sync-gtasks--default-tasklist-id =>
            "TASKLIST-ID")
-     (stub org-sync-gtasks--get-gtask-from-cache-or-api =>
-           (ht ("title"  "Title")
-               ("id"     "TASK-ID")
-               ("etag"   "ETAG")
-               ("status" "needsAction")))
-     (stub org-sync-gtasks--api-tasks-patch =>
-           (ht ("title" "Title")
-               ("id" "TASK-ID")
-               ("etag" "ETAG")
-               ("status" "completed")))
-     (org-sync-gtasks-at-point))
+     (stub org-sync-gtasks--make-tasklist-cache =>
+           (ht))
+     (stub org-sync-gtasks-at-point => nil)
+     (org-sync-gtasks-agenda))
    :output
-   "\\* DONE Title
+   "\\* TODO TASK
 :PROPERTIES:
 :GTASKS-TASKLIST-ID: TASKLIST-ID
 :GTASKS-ID: TASK-ID
 :GTASKS-ETAG: ETAG
-:GTASKS-STATUS: completed
+:GTASKS-STATUS: needsAction
 :END:
 "))
 
@@ -665,27 +694,5 @@ Ref: https://github.com/bzg/org-mode/blob/6d73cd34a07796c33f9435bfc8c9a19e67656c
 :GTASKS-STATUS: needsAction
 :END:
 "))
-
-(ert-deftest org-sync-gtasks-agenda-test/completed-gtasks ()
-  "No new tasks in Google Tasks"
-  (org-sync-gtasks--test-with-org-buffer
-   :input
-   "* TASK
-"
-   :target
-   (with-mock
-     (stub org-agenda-files => (list (buffer-file-name)))
-     (stub org-sync-gtasks--default-tasklist-id =>
-           "TASKLIST-ID")
-     (stub org-sync-gtasks--make-tasklist-cache =>
-           (ht ("TASK-ID"
-                (ht ("title"  "TITLE")
-                    ("id"     "TASK-ID")
-                    ("etag"   "ETAG")
-                    ("status" "completed")))))
-     (org-sync-gtasks-agenda))
-   :output
-   "\\* TASK
-")) ; TODO: this matches even if TASK has properties...
 
 ;;; org-sync-gtasks-test.el ends here

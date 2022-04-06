@@ -1,4 +1,4 @@
-[[https://coveralls.io/github/ychubachi/org-sync-gtasks][https://coveralls.io/repos/github/ychubachi/org-sync-gtasks/badge.svg]]
+[[https://coveralls.io/github/ychubachi/org-sync-gtasks][https://coveralls.io/repos/github/ychubachi/org-sync-gtasks/badge.svg?branch=main]]
 
 * Org Sync GTasks
 Synchronize Org TODO lists and Google Tasks.

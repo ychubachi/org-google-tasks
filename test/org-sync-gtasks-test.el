@@ -695,4 +695,40 @@ Ref: https://github.com/bzg/org-mode/blob/6d73cd34a07796c33f9435bfc8c9a19e67656c
 :END:
 "))
 
+(ert-deftest org-sync-gtasks-unsync-at-point/check-org-mode ()
+  "Error if not in org-mode"
+  (should-error (org-sync-gtasks-unsync-at-point)))
+
+(ert-deftest org-sync-gtasks-unsync-at-point/not-at-gtasks-task ()
+  "Test unsync."
+  (org-sync-gtasks--test-with-org-buffer
+   :input
+   "* TODO headline
+"
+   :target
+   (should-error (org-sync-gtasks-unsync-at-point))
+   :output
+   "\\* TODO headline
+"))
+
+(ert-deftest org-sync-gtasks-unsync-at-point/unsync ()
+  "Test unsync."
+  (org-sync-gtasks--test-with-org-buffer
+   :input
+   "* TODO headline
+:PROPERTIES:
+:GTASKS-TASKLIST-ID: TASKLIST-ID
+:GTASKS-ID: TASK-ID
+:GTASKS-ETAG: ETAG
+:GTASKS-STATUS: needsAction
+:END:
+"
+   :target
+   (with-mock
+     (stub org-sync-gtasks--api-tasks-delete => nil)
+     (org-sync-gtasks-unsync-at-point))
+   :output
+   "\\* TODO headline
+"))
+
 ;;; org-sync-gtasks-test.el ends here

@@ -220,5 +220,26 @@ Deleted GTasks tasks are also needed to update to change stautus."
          (ht-get cache gtasks-id)))))
   (message "GTasks: Done"))
 
+;;;###autoload
+(defun org-sync-gtasks-unsync-at-point ()
+  "Un-syncronize the headline from the GTasks task."
+  (interactive)
+  ;; Check major-mode
+  (if (not (derived-mode-p 'org-mode))
+      (error "Please use this command in org-mode"))
+  ;; Check the headline is a GTasks task
+  (if (not (and (org-entry-get nil "GTASKS-TASKLIST-ID")
+                (org-entry-get nil "GTASKS-ID")))
+      (error "This is not GTasks task"))
+  ;; Delete the GTasks task
+  (org-sync-gtasks--api-tasks-delete
+   (org-entry-get nil "GTASKS-TASKLIST-ID")
+   (org-entry-get nil "GTASKS-ID"))
+  ;; Remove GTasks properties
+  (mapc (lambda (x)
+          (if (string-match "^GTASKS-" (car x))
+              (org-entry-delete nil (car x))))
+        (org-entry-properties nil)))
+
 (provide 'org-sync-gtasks)
 ;;; org-sync-gtasks.el ends here

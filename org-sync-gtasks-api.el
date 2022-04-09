@@ -65,20 +65,23 @@ Usage: TODO
 	  (body (decode-coding-string (plist-get response :body) 'utf-8)))
      ;; (message "org-sync-gtasks--api %s %s" ,request-method ,url)
      ;; Error in HTTP response
-     (if (not (eq status 200))
+     (if (not (memq status '(200 204)))
          (progn
            (error
-            "GTask HTTP error: %s\nurl=%s,\nrequest method=%s\nrequest data=%s"
-            reason ,url ,request-method ,request-data)))
+            "GTask HTTP error: %s (%s)\nurl=%s\nrequest method=%s\nrequest data=%s"
+            status reason ,url ,request-method ,request-data)))
      :status status :reason reason
      ;; Error in HTTP response body
-     (setq result (json-parse-string body))
-     ;; Errors in JSON response
-     (let ((error-data (ht-get result "error")))
-       (if error-data
-           (error "GTask API error: %s (%s)"
-                  (ht-get error-data "message")
-                  error-data))) ;; TODO: more Echo datail?
+     (if (eq status 204)
+         (setq result nil) ; 'No content'
+       (progn
+         (setq result (json-parse-string body))
+         ;; Errors in JSON response
+         (let ((error-data (ht-get result "error")))
+           (if error-data
+               (error "GTask API error: %s (%s)"
+                      (ht-get error-data "message")
+                      error-data)))))
      result))
 
 (defun org-sync-gtasks--api-tasklists-list ()
@@ -195,6 +198,26 @@ Usage:
 
 ;; (org-sync-gtasks--api-tasks-insert "HOGE" '(:title "My Task"))
 ;; => error
+
+(defun org-sync-gtasks--api-tasks-delete (tasklist-id task-id)
+  "Deletes the specified task from the task list.
+
+See URL https://developers.google.com/tasks/reference/rest/v1/tasks/delete
+
+Usage:
+  (org-sync-gtasks--api-tasks-delete TASKLIST-ID TASK-ID)
+"
+  (org-sync-gtasks--api
+   (format "https://tasks.googleapis.com/tasks/v1/lists/%s/tasks/%s" tasklist-id task-id)
+   "DELETE"))
+
+;; Test case:
+
+;; (org-sync-gtasks--api-tasks-insert "MDc1MzA1NTQ1OTYxODU5MTEwMTg6MDow" '(:title "My Task"))
+;; => #s(hash-table size 8 test equal rehash-size 1.5 rehash-threshold 0.8125 data ("kind" "tasks#task" "id" "NFRhbHMtNXhrM3N3ek9HeA" "etag" "\"MjQ3Mjc5MTU3\"" "title" "My Task" "updated" "2022-04-09T14:32:01.000Z" "selfLink" "https://www.googleapis.com/tasks/v1/lists/MDc1MzA1NTQ1OTYxODU5MTEwMTg6MDow/tasks/NFRhbHMtNXhrM3N3ek9HeA" "position" "00000000000000000000" "status" "needsAction"))
+
+;; (org-sync-gtasks--api-tasks-delete "MDc1MzA1NTQ1OTYxODU5MTEwMTg6MDow" "NFRhbHMtNXhrM3N3ek9HeA")
+;; => nil
 
 (provide 'org-sync-gtasks-api)
 ;;; org-sync-gtasks-api.el ends here

@@ -147,7 +147,7 @@ not same | ---      -> Get it from remote.
 "
   (interactive)
   ;; Check major-mode
-  (if (not (eq major-mode 'org-mode))
+  (if (not (derived-mode-p 'org-mode))
       (error "Please use this command in org-mode"))
   ;; Check the headline has ITEM
   (if (not (org-entry-get nil "ITEM"))
@@ -198,7 +198,7 @@ Also, pull other GTasks tasks as new headines.
 Deleted GTasks tasks are also needed to update to change stautus."
   (interactive)
   ;; Check major-mode
-  (if (not (eq major-mode 'org-mode))
+  (if (not (derived-mode-p 'org-mode))
       (error "Please use this command in org-mode"))
   ;; Make a list of GTASKS-ID by looking up all org TODO headlines in agenda.
   (let* ((tasklist-id (org-sync-gtasks--default-tasklist-id))

@@ -133,9 +133,8 @@ See URL https://developers.google.com/tasks/reference/rest/v1/tasks/list"
 ;; Hello World!" "status" "needsAction")) #s(hash-table size 9 test equal rehash-size 1.5 rehash-threshold 0.8125 data ("kind" "tasks#task" "id" "dlAzdXRlWDh2Z0dsck4xcQ" "etag" "\"MjA3MjIxMDY4Nw\"" "title" "Task 7 as sub-task" "updated" "2022-03-12T00:24:45.000Z" "selfLink" "https://www.googleapis.com/tasks/v1/lists/MDc1MzA1NTQ1OTYxODU5MTEwMTg6MDow/tasks/dlAzdXRlWDh2Z0dsck4xcQ" "parent" "aEQ1TjhNOGRiS3p6VmR4dw" "position" "00000000000000000000" "status" "needsAction")) #s(hash-table size 8 test equal rehash-size 1.5 rehash-threshold 0.8125 data ("kind" "tasks#task" "id" "aEQ1TjhNOGRiS3p6VmR4dw" "etag" "\"MjA3MjE3NDc0OA\"" "title" "Task6 as parent" "updated" "2022-03-12T00:24:09.000Z" "selfLink" "https://www.googleapis.com/tasks/v1/lists/MDc1MzA1NTQ1OTYxODU5MTEwMTg6MDow/tasks/aEQ1TjhNOGRiS3p6VmR4dw" "position" "00000000000000000006" "status" "needsAction")) #s(hash-table size 9 test equal rehash-size 1.5 rehash-threshold 0.8125 data ("kind" "tasks#task" "id" "Y1hxLXB0ZHJZb0x0Z3I0Mw" "etag" "\"MjA3MjE1ODc0MQ\"" "title" "Task5 with date time" "updated" "2022-03-12T00:23:53.000Z" "selfLink" "https://www.googleapis.com/tasks/v1/lists/MDc1MzA1NTQ1OTYxODU5MTEwMTg6MDow/tasks/Y1hxLXB0ZHJZb0x0Z3I0Mw" "position" "00000000000000000005" "status" "needsAction" "due" "2022-03-15T00:00:00.000Z")) #s(hash-table size 9 test equal rehash-size 1.5 rehash-threshold 0.8125 data ("kind" "tasks#task" "id" "aUhGRlpRMXhqbmZrN1JsQQ" "etag" "\"MjA3MjE0NDc4NQ\"" "title" "Task4 with date (repeat)" "updated" "2022-03-12T00:23:38.000Z" "selfLink" "https://www.googleapis.com/tasks/v1/lists/MDc1MzA1NTQ1OTYxODU5MTEwMTg6MDow/tasks/aUhGRlpRMXhqbmZrN1JsQQ" "position" "00000000000000000004" "status" "needsAction" "due" "2022-03-15T00:00:00.000Z")) #s(hash-table size 9 test equal rehash-size 1.5 rehash-threshold 0.8125 data ("kind" "tasks#task" "id" "TDlONFk0TThJT1VGb0h6RQ" "etag" "\"MjA3MjA4NTAzMA\"" "title" "Tasks3 with date" "updated" "2022-03-12T00:22:39.000Z" "selfLink" "https://www.googleapis.com/tasks/v1/lists/MDc1MzA1NTQ1OTYxODU5MTEwMTg6MDow/tasks/TDlONFk0TThJT1VGb0h6RQ" "position" "00000000000000000003" "status" "needsAction" "due" "2022-03-31T00:00:00.000Z")) #s(hash-table size 8 test equal rehash-size 1.5 rehash-threshold 0.8125 data ("kind" "tasks#task" "id" "cF9ORW8yYWgyNTVES1dIbg" "etag" "\"MjA3MjA0NDc2MQ\"" "title" "Task1" "updated" "2022-03-12T00:21:59.000Z" "selfLink" "https://www.googleapis.com/tasks/v1/lists/MDc1MzA1NTQ1OTYxODU5MTEwMTg6MDow/tasks/cF9ORW8yYWgyNTVES1dIbg" "position" "00000000000000000001" "status" "needsAction"))]))
 
 (defun org-sync-gtasks--api-tasks-insert (tasklist-id task)
-  "TODO: Creates a new task list and adds it to the authenticated user's task lists.
+  "Creates a new task on the specified task list.
 
-TASKLIST is a tasklist object. This returns response in JSON strings.
 See URL https://developers.google.com/tasks/reference/rest/v1/tasks/insert
 
 Usage:
@@ -172,14 +171,11 @@ Usage:
 ;; => #s(hash-table size 9 test equal rehash-size 1.5 rehash-threshold 0.8125 data ("kind" "tasks#task" "id" "dW1RS0Q5ZENSd2ZnbUQ1Uw" "etag" "\"LTE0MDM0NzQyNjY\"" "title" "My Task" "updated" "2022-03-21T11:59:27.000Z" "selfLink" "https://www.googleapis.com/tasks/v1/lists/MDc1MzA1NTQ1OTYxODU5MTEwMTg6MDow/tasks/dW1RS0Q5ZENSd2ZnbUQ1Uw" "position" "00000000000000000000" "status" "needsAction" "deleted" t))
 
 (defun org-sync-gtasks--api-tasks-patch (tasklist-id task-id task)
-  "TODO: Creates a new task list and adds it to the authenticated user's task lists.
+  "Updates the specified task. This method supports patch semantics.
 
-TASKLIST is a tasklist object. This returns response in JSON strings.
-See URL https://developers.google.com/tasks/reference/rest/v1/tasks/insert
-
+See URL https://developers.google.com/tasks/reference/rest/v1/tasks/patch
 Usage:
-  (org-sync-gtasks--api-tasks-insert '(:title \"My Task\"))
-  (org-sync-gtasks--api-tasks-insert '((title . \"My Task\")))
+  (org-sync-gtasks--api-tasks-patch TASKLIST-ID TASK-ID '(:title \"My Task\"))
 "
   (org-sync-gtasks--api
    (format "https://tasks.googleapis.com/tasks/v1/lists/%s/tasks/%s" tasklist-id task-id)

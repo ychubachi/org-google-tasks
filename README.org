@@ -8,6 +8,7 @@ This package provides two entriy points.
 
 1. =org-sync-gtasks-at-point=
 2. =org-sync-gtasks-agenda=
+3. =org-sync-gtasks-unsync-at-point=
 
 Move your cursor to an Org TODO headline and =M-x org-sync-gtasks-at-point=.
 Then a new task is inserted to your default Google Tasks tasklist.  Several
@@ -23,6 +24,9 @@ use this command, the Google Tasks task will be updated.
 all your TODO headlines with the GTASKS-ID property in the Org agenda files.
 Plus, the new tasks in Google Tasks which are not in Org agend files are
 inserted as Org headlines at the current cursor position.
+
+=M-x org-sync-gtasks-unsync-at-point= removes the task from Google Tasks and
+clears all Google Tasks properties such as GTASKS-ID.
 
 * Configration
 

@@ -6,10 +6,10 @@ Synchronize Org TODO lists and Google Tasks.
 * Usage
 This package provides two entriy points.
 
-1. org-sync-gtasks-at-point
-2. org-sync-gtasks-agenda
+1. =org-sync-gtasks-at-point=
+2. =org-sync-gtasks-agenda=
 
-Move your cursor to an Org TODO headline and `M-x org-sync-gtasks-at-point`.
+Move your cursor to an Org TODO headline and =M-x org-sync-gtasks-at-point=.
 Then a new task is inserted to your default Google Tasks tasklist.  Several
 properties of a Google Tasks task will be added to the headline.  The GTASKS-ID
 property is the most important property which enables this command to determin
@@ -19,7 +19,7 @@ If you edit the task on Google Tasks side, using this command again will pull
 the changes to your Org TODO headline.  Or if you edit the Org TODO headline and
 use this command, the Google Tasks task will be updated.
 
-`M-x org-sync-gtasks-agenda` applies the `org-sync-gtasks-at-point` command to
+=M-x org-sync-gtasks-agenda= applies the =org-sync-gtasks-at-point= command to
 all your TODO headlines with the GTASKS-ID property in the Org agenda files.
 Plus, the new tasks in Google Tasks which are not in Org agend files are
 inserted as Org headlines at the current cursor position.
@@ -28,18 +28,18 @@ inserted as Org headlines at the current cursor position.
 
 Obtain your credential file in JSON format from Google Developres Console.
 Don't forget to give Google Tasks access permitions to it.  Put your JSON file
-to `~/.client_secret.json`.  You can change this path by customizing
-`org-sync-gtasks-client-secret-jso`n variable.
+to =~/.client_secret.json=.  You can change this path by customizing
+=org-sync-gtasks-client-secret-json= variable.
 
 * Installation
 
 If you use leaf with straight,
 
-```
+#+begin_src emacs-lisp
   (leaf org-sync-gtasks
     :straight (org-sync-gtasks :type git :host github
                           :repo "ychubachi/org-sync-gtasks"))
-```
+#+end_src
 
 * Limitations
 - This command can handle only your default tasklist of Google Tasks.

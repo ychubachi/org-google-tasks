@@ -28,7 +28,7 @@ inserted as Org headlines at the current cursor position.
 
 Obtain your credential file in JSON format from Google Developres Console.
 Don't forget to give Google Tasks access permitions to it.  Put your JSON file
-to =~/.client_secret.json=.  You can change this path by customizing
+to =~/.gtasks_client_secret.json=.  You can change this path by customizing
 =org-sync-gtasks-client-secret-json= variable.
 
 * Installation

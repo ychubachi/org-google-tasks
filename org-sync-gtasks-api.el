@@ -7,17 +7,23 @@
 (defcustom org-sync-gtasks-client-secret-json "~/.gtasks_client_secret.json"
   "The location to your client secret JSON file for GTasks."
   :type '(string)
-  :group 'my)
+  :group 'org-sync-gtasks)
+
+(defvar org-sync-gtasks--token-cache nil)
 
 (defun org-sync-gtasks--token ()
-  (let* ((secret (json-read-file org-sync-gtasks-client-secret-json))
-         (installed (cdr (assq 'installed secret)))
-         (client-id (cdr (assq 'client_id installed)))
-         (client-secret (cdr (assq 'client_secret installed)))
-         (auth-url "https://accounts.google.com/o/oauth2/auth")
-         (token-url "https://www.googleapis.com/oauth2/v3/token")
-         (scope "https://www.googleapis.com/auth/tasks"))
-    (oauth2-auth-and-store auth-url token-url scope client-id client-secret)))
+  (when (not org-sync-gtasks--token-cache)
+    (setq org-sync-gtasks--token-cache
+          (let* ((secret (json-read-file org-sync-gtasks-client-secret-json))
+                 (installed (cdr (assq 'installed secret)))
+                 (client-id (cdr (assq 'client_id installed)))
+                 (client-secret (cdr (assq 'client_secret installed)))
+                 (auth-url "https://accounts.google.com/o/oauth2/auth")
+                 (token-url "https://www.googleapis.com/oauth2/v3/token")
+                 (scope "https://www.googleapis.com/auth/tasks"))
+            (oauth2-auth-and-store auth-url token-url scope
+                                   client-id client-secret))))
+  org-sync-gtasks--token-cache)
 
 (defun org-sync-gtasks--parse-http-response (buffer)
   "This function parses a buffer as an HTTP response. See RFC 2616.

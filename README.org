@@ -43,5 +43,3 @@ If you use leaf with straight,
 
 * Limitations
 - This command can handle only your default tasklist of Google Tasks.
-- First time you connects to Google Tasks API, an error might be occured
-  in OAuth2 process.  Please try again in such case.

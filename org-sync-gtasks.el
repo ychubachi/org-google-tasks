@@ -9,6 +9,7 @@
 (require 'org)
 (require 'ht)
 (require 'org-sync-gtasks-api)
+
 (defun org-sync-gtasks--default-tasklist-id ()
   "This gets the defult tasklist ID."
   (ht-get
@@ -33,7 +34,7 @@
         (org-entry-put nil "GTASKS-ETAG" (ht-get gtask "etag"))
         (if (ht-get gtask "parent")
             (org-entry-put nil "GTASKS-PARENT" (ht-get gtask "parent")))
-        (if (ht-get gtask "notes")
+        (if (ht-get gtask "notes") ;; TODO: Escape newlines
             (org-entry-put nil "GTASKS-NOTES" (ht-get gtask "notes")))
         (let ((status (ht-get gtask "status")))
           (when status
@@ -53,8 +54,8 @@
             (org-entry-put nil "GTASKS-DELETED" "true"))
         (if (ht-get gtask "hidden")
             (org-entry-put nil "GTASKS-HIDDEN" "true")) ; Read only parameter
-        ;; TODO: links
         )))
+        ;; TODO: links - Google Tasks dose not support it now??
 
 (defun org-sync-gtasks--insert-todo-headline (tasklist-id gtask)
   "Make a new todo headline from GTasks' task."

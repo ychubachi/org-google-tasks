@@ -178,7 +178,7 @@ Hello World!" "status" "needsAction")) #s(hash-table test equal data ("kind" "ta
        "* dummy
 "
        :output
-       "\\* TODO TITLE
+       "\\* TODO TITLE\\ +?:GTasks:
 DEADLINE: .*
 :PROPERTIES:
 :GTASKS-TASKLIST-ID: .*
@@ -204,7 +204,7 @@ DEADLINE: .*
    ((:input
      ""
      :output
-     "\\* TODO TITLE
+     "\\* TODO TITLE\\ +?:GTasks:
 :PROPERTIES:
 :GTASKS-TASKLIST-ID: TEST-TASKLIST-ID
 :GTASKS-ID: TEST-TASK-ID
@@ -215,8 +215,8 @@ DEADLINE: .*
      "* dummy
 "
      :output
-     "\\ *dummy
-\\* TODO TITLE
+     "\\* dummy
+\\* TODO TITLE\\ +?:GTasks:
 :PROPERTIES:
 :GTASKS-TASKLIST-ID: TEST-TASKLIST-ID
 :GTASKS-ID: TEST-TASK-ID
@@ -423,7 +423,7 @@ DEADLINE: <2022-04-02>
                ("status" "needsAction")))
      (org-sync-gtasks-at-point))
    :output
-   "\\* TODO Title
+   "\\* TODO Title\\ +?:GTasks:
 :PROPERTIES:
 :GTASKS-TASKLIST-ID: TASKLIST-ID
 :GTASKS-ID: TASK-ID
@@ -496,7 +496,7 @@ DEADLINE: <2022-04-01>
                ("due"    "2022-04-01")))
      (org-sync-gtasks-at-point))
    :output
-   "\\* TODO Title
+   "\\* TODO Title\\ +?:GTasks:
 DEADLINE: <2022-04-01 Fri>
 :PROPERTIES:
 :GTASKS-TASKLIST-ID: TASKLIST-ID
@@ -532,7 +532,7 @@ DEADLINE: <2022-04-01>
                ("due"    "2022-04-16T00:00:00.000Z")))
      (org-sync-gtasks-at-point))
    :output
-   "\\* TODO Title
+   "\\* TODO Title\\ +?:GTasks:
 DEADLINE: <2022-04-16 Sat>
 :PROPERTIES:
 :GTASKS-TASKLIST-ID: TASKLIST-ID
@@ -599,7 +599,7 @@ DEADLINE: <2022-04-16 Sat>
                ("status" "completed")))
      (org-sync-gtasks-at-point))
    :output
-   "\\* DONE Title
+   "\\* DONE Title\\ +?:GTasks:
 :PROPERTIES:
 :GTASKS-TASKLIST-ID: TASKLIST-ID
 :GTASKS-ID: TASK-ID
@@ -686,7 +686,7 @@ Ref: https://github.com/bzg/org-mode/blob/6d73cd34a07796c33f9435bfc8c9a19e67656c
      (org-sync-gtasks-agenda))
    :output
    "\\ TASK
-\\* TODO TITLE
+\\* TODO TITLE\\ +?:GTasks:
 :PROPERTIES:
 :GTASKS-TASKLIST-ID: TASKLIST-ID
 :GTASKS-ID: TASK-ID
@@ -715,7 +715,7 @@ Ref: https://github.com/bzg/org-mode/blob/6d73cd34a07796c33f9435bfc8c9a19e67656c
   "Test unsync."
   (org-sync-gtasks--test-with-org-buffer
    :input
-   "* TODO headline
+   "* TODO headline :GTasks:
 :PROPERTIES:
 :GTASKS-TASKLIST-ID: TASKLIST-ID
 :GTASKS-ID: TASK-ID

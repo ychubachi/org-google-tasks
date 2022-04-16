@@ -54,8 +54,9 @@
             (org-entry-put nil "GTASKS-DELETED" "true"))
         (if (ht-get gtask "hidden")
             (org-entry-put nil "GTASKS-HIDDEN" "true")) ; Read only parameter
-        )))
         ;; TODO: links - Google Tasks dose not support it now??
+        (org-back-to-heading)
+        (org-set-tags "GTasks"))))
 
 (defun org-sync-gtasks--insert-todo-headline (tasklist-id gtask)
   "Make a new todo headline from GTasks' task."
@@ -240,7 +241,10 @@ Deleted GTasks tasks are also needed to update to change stautus."
   (mapc (lambda (x)
           (if (string-match "^GTASKS-" (car x))
               (org-entry-delete nil (car x))))
-        (org-entry-properties nil)))
+        (org-entry-properties nil))
+  ;; Remove the GTasks tag
+  (org-back-to-heading)
+  (org-set-tags nil))
 
 (provide 'org-sync-gtasks)
 ;;; org-sync-gtasks.el ends here

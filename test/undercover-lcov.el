@@ -1,4 +1,4 @@
-;;; usdercover-lcov.el --- Helpers for org-google-tasks-test.el -*- lexical-binding: t -*-
+;;; undercover-lcov.el --- Helpers for org-google-tasks-test.el -*- lexical-binding: t -*-
 (message "Use lcov for coverage")
 
 (require 'undercover)

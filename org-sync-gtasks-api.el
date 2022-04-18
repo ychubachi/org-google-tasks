@@ -12,7 +12,9 @@
 (defvar org-sync-gtasks--token-cache nil)
 
 (defun org-sync-gtasks--token ()
+  (message "org-sync-gtasks--token")
   (when (not org-sync-gtasks--token-cache)
+    (message "org-sync-gtasks--token-cache is nil")
     (setq org-sync-gtasks--token-cache
           (let* ((secret (json-read-file org-sync-gtasks-client-secret-json))
                  (installed (cdr (assq 'installed secret)))
@@ -23,6 +25,8 @@
                  (scope "https://www.googleapis.com/auth/tasks"))
             (oauth2-auth-and-store auth-url token-url scope
                                    client-id client-secret))))
+  ;;(message "org-sync-gtasks--token-cache is \n%s" org-sync-gtasks--token-cache)
+  (pp org-sync-gtasks--token-cache)
   org-sync-gtasks--token-cache)
 
 (defun org-sync-gtasks--parse-http-response (buffer)

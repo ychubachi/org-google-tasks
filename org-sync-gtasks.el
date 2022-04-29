@@ -1,5 +1,5 @@
 ;;; org-sync-gtasks.el --- Synchronize Org TODO lists and Google Tasks -*- lexical-binding: t -*-
-;; Author: ychubachi
+;; Author: Yoshihide Chubachi
 ;; URL: https://github.com/ychubachi/org-sync-gtasks
 ;; Version: 0.9.1
 ;; Package-Requires: ((emacs "27.1") (org "9.5.2") (oauth2 "0.16") (ht "2.4"))

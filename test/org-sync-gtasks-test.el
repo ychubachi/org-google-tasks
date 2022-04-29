@@ -4,6 +4,7 @@
 ;;; For tests.
 (require 'el-mock)
 
+;; TODO: --test -> -test--
 (defmacro org-sync-gtasks--test-with-org-buffer (&rest rest)
   "A macro to write test functions which changes org texts.
 

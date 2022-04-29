@@ -35,9 +35,24 @@ Don't forget to give Google Tasks access permitions to it.  Put your JSON file
 to =~/.gtasks_client_secret.json=.  You can change this path by customizing
 =org-sync-gtasks-client-secret-json= variable.
 
+The access token is stored in =~/.emacs.d/oauth2.plstore= and encrypted by GnuPG.
+If you want to enter the pass phrase in Emacs mini-buffer, set
+=epg-pinentry-mode= variable to ='loopback=.
+
+#+begin_src emacs-lisp
+  (setq epg-pinentry-mode 'loopback)
+#+end_src
+
 * Installation
 
-If you use leaf with straight,
+If you use [[https://github.com/raxod502/straight.el][straight.el]],
+
+#+begin_src emacs-lisp
+  (straight-use-package '(org-sync-gtasks :type git :host github
+                                          :repo "ychubachi/org-sync-gtasks"))
+#+end_src
+
+If you use [[https://github.com/conao3/leaf.el][leaf.el]] with straight,
 
 #+begin_src emacs-lisp
   (leaf org-sync-gtasks

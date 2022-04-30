@@ -43,6 +43,12 @@ If you want to enter the pass phrase in Emacs mini-buffer, set
   (setq epg-pinentry-mode 'loopback)
 #+end_src
 
+This allows the GPG passphrase to be cached during the Emacs session.
+
+#+begin_src emacs-lisp
+  (setq plstore-cache-passphrase-for-symmetric-encryption t)
+#+end_src
+
 * Installation
 
 If you use [[https://github.com/raxod502/straight.el][straight.el]],

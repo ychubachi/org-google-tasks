@@ -20,7 +20,7 @@
                 (scope "https://www.googleapis.com/auth/tasks"))
            (oauth2-auth-and-store auth-url token-url scope
                                   client-id client-secret))))
-    (oauth2-refresh-access token)
+    (oauth2-refresh-access token) ;; HACK
     token))
 
 (defun org-sync-gtasks--parse-http-response (buffer)
